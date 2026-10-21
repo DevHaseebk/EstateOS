@@ -2,7 +2,7 @@
 
 ## Current task
 - Contract: `docs/PHASE-2A-REVIEW-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-21, including the section 8 confirmations.
-- Git: branch `master`, HEAD `a9bc10a` (pushed). **All Phase 2a work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Git: branch `master`, Phase 2a committed as `430e8d8` and pushed to `origin/master` on the owner's instruction.
 - Decisions: D-022, D-064–D-069, D-072, D-073, D-092, D-102, D-115.
 
 ## Work completed

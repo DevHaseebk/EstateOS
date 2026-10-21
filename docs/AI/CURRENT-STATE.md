@@ -25,7 +25,7 @@ Phase 1 auth & tenant foundation was implemented by Codex and verified by Claude
 
 ## Phase 2a status (2026-10-21)
 
-The Phase 2a Super Admin review lifecycle contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-2A-REVIEW-CONTRACT-APPROVED.md`.
+The Phase 2a Super Admin review lifecycle contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude**, committed `430e8d8` and pushed: `docs/PHASE-2A-REVIEW-CONTRACT-APPROVED.md`.
 
 - Built: review state machine with optimistic `reviewVersion` and an append-only `AgencyAudit` written in the same transaction; Super Admin review queue, detail, decisions and reopen; owner status card with Resubmit; the BFF allow-list; and the migration CLI `npm run migrate:review-axes -w backend`, already run on the Atlas dev DB.
 - Checks: typecheck, lint and build pass for all 4 workspaces; `npm test -w backend` passes 26/26; an HTTPS end-to-end round trip passed.
