@@ -56,7 +56,7 @@ The Phase 3b contract is **APPROVED** (2026-10-21) and **implemented and verifie
 
 ## Phase 3c status (2026-10-21)
 
-The Phase 3c contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-3C-OPTIONAL-SECTIONS-CONTRACT-APPROVED.md`.
+The Phase 3c contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude**, committed `c006a66` and pushed: `docs/PHASE-3C-OPTIONAL-SECTIONS-CONTRACT-APPROVED.md`.
 
 - Built: About, Services, Why Choose Us and Team (all hidden until they have content); a separate Layout save for show/hide and order; card editors; 12 icons; consent required for team numbers.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 76/76; server-render checks pass; the HTTPS end-to-end check passed.
