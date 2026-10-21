@@ -3,3 +3,31 @@
 :root {
   color-scheme: light;
 }
+
+body { margin: 0; background: #f5f5f2; color: #172421; font-family: Arial, Helvetica, sans-serif; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: wait; opacity: .65; }
+button:focus-visible, input:focus-visible { outline: 3px solid #14866d; outline-offset: 3px; }
+.auth-page { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 480px); align-items: center; gap: clamp(2rem, 7vw, 8rem); max-width: 1200px; margin: auto; padding: clamp(1.5rem, 5vw, 5rem); }
+.auth-intro h1 { font-size: clamp(2.5rem, 5vw, 4.6rem); line-height: 1.05; letter-spacing: -.04em; max-width: 11ch; margin: 1rem 0; }
+.auth-intro p:not(.eyebrow) { max-width: 42ch; color: #3d514b; font-size: 1.1rem; line-height: 1.55; }
+.eyebrow { color: #126d59; font-size: .78rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.auth-note { display: inline-block; margin-top: 1.3rem; padding: .8rem 1rem; border-left: 3px solid #14866d; background: #e8f2ed; line-height: 1.5; }
+.auth-card { background: white; border: 1px solid #d5ded8; border-radius: 20px; box-shadow: 0 16px 48px #12271e12; padding: clamp(1.5rem, 4vw, 2.5rem); }
+.auth-card h2 { font-size: 1.6rem; letter-spacing: -.025em; margin: 1.2rem 0; }
+.auth-card p { line-height: 1.5; }
+.auth-tabs { display: flex; border-bottom: 1px solid #d5ded8; gap: 1.5rem; }
+.auth-tabs button { border: 0; border-bottom: 3px solid transparent; background: none; min-height: 44px; padding: .6rem 0; color: #41554f; font-weight: 700; }
+.auth-tabs button.selected { color: #126d59; border-color: #14866d; }
+form { display: grid; }
+label { font-weight: 700; margin: .85rem 0 .35rem; }
+input { width: 100%; box-sizing: border-box; min-height: 46px; padding: .7rem .85rem; border: 1px solid #9bab9f; border-radius: 9px; background: #fff; color: #172421; }
+.field-hint { color: #4c6057; font-size: .9rem; margin: .45rem 0 0; }
+.primary { width: 100%; min-height: 48px; padding: .8rem 1rem; margin-top: 1.4rem; border: 0; border-radius: 9px; background: #126d59; color: white; font-weight: 800; }
+.primary:hover { background: #0d5545; }
+.text-button { min-height: 44px; background: none; border: 0; color: #126d59; font-weight: 700; margin-top: .7rem; padding: .4rem 0; }
+.form-error, .form-notice { padding: .8rem 1rem; border-radius: 9px; margin-top: 1rem; }
+.form-error { color: #8a1822; background: #fff0f0; }
+.form-notice { color: #18523d; background: #e8f2ed; }
+@media (max-width: 780px) { .auth-page { grid-template-columns: 1fr; gap: 2rem; padding: 1.5rem; align-items: start; } .auth-intro h1 { max-width: 16ch; } .auth-card { max-width: 560px; width: 100%; box-sizing: border-box; } }

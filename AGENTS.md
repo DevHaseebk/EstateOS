@@ -1,22 +1,31 @@
-# EstateOS — shared AI instructions (current: v5.8, Phase 0.5)
+# EstateOS — Project Rules (CURRENT v5.9)
 
-Read docs/AI/CURRENT-STATE.md, docs/DECISIONS.md (especially D-028), docs/MVP-RESET-v1.7.md, docs/AI/HANDOVER-LATEST.md, docs/OPEN-QUESTIONS.md, and the active milestone before work. For the approved policy and exact sources, use docs/PLANNING-INDEX-LOCKED-v5.8.md and docs/IMPLEMENTATION-READINESS-v5.8-CONFIRMED-MAP.md. Earlier version snapshots and proposals are historical when they conflict with v5.8.
+**Owner authority:** User approved all D-088–D-119 Option A on 2026-10-21 as planning POLICY, not blanket permission to write feature code. D-001–D-087 prior confirmed requirements remain intact.
 
-## Current work boundary
+## Mandatory read order
 
-The owner authorized Phase 0.5 verification, minor foundation fixes, instruction and handover reconciliation, and a local commit. The root Git repository already exists and has a remote. Inspect status, branch and recent commits first. Do not initialize Git, create nested repositories, alter remotes, or push without explicit owner permission.
+1. `docs/PLANNING-INDEX-LOCKED-v5.9.md`, `docs/DECISIONS.md`, `docs/IMPLEMENTATION-READINESS-v5.9-CONFIRMED-MAP.md`.
+2. `docs/AI/CURRENT-STATE.md` and `docs/AI/HANDOVER-LATEST.md`.
+3. Feature-specific canonical `*-CONFIRMED.md` docs; check `docs/OPEN-QUESTIONS.md`.
 
-The four root npm workspaces are frontend (4000), admin (4001), super-admin (4002), and backend (4003, /api/health). Phase 0.5 permits typecheck, lint, build, health verification and minor scaffold fixes. Authentication, database business models, agency APIs, property CRUD, publishing and other business features remain unauthorized. Do not interpret a confirmed policy decision as feature-coding permission.
+## Precedence
 
-## Confirmed policy to preserve
+Current owner-confirmed canonical specs > preceding confirmed specs at their actual scope > proposals/discussions/historical banners. Old proposal A/B/C letters are NOT automatically current selections. Escalate actual contradictory confirmed policies instead of silently inventing a supersession. Historical v5.8 full root rules retained in `docs/AI/HISTORY-v5.8-AGENTS.md` (never treat as active).
 
-- D-022/D-028: lean signup immediately Pending, manual Super Admin review, mandatory reasons for Request Changes and Reject, and no mandatory KYC, verified email, map or document gate.
-- D-029/D-033/D-077/D-084: first public Live is automatic after manual approval and genuine readiness; include eligible saved Available and non-Archived properties if any. Zero properties are valid. No first owner Publish or Submit step.
-- D-030–D-063: one premium template, nine core sections, three curated themes, private saved-draft editing and Preview, optional properties, and deliberate owner Publish Updates for already-Live saved changes. Read the individual confirmed specifications for exact UX, fields and limits.
-- D-064–D-073: confirmed Super Admin review, correction, directory, restriction, role and audit policies. D-074–D-080: confirmed session, tenant, public-site and publication policies; pilot internal CRM is deferred.
-- D-081–D-087: host-scoped management sessions; stable pilot slug; Blocked and Deactivated sites non-public until eligible restoration; eligible properties in first Live snapshot; canonical Profile values stage into private site draft; validated privacy-safe optimized media; truthful atomic publish with safe idempotent retry that retains previous Live and draft on failure.
-- D-088–D-094 are proposals only. Exact auth, schemas/APIs, state transitions, mappings, media processing, retry/cache mechanics, DNS, QA, deployment and billing remain open.
+## Nonnegotiables
 
-## Working rules
+- D-028: self-service and Super Admin-created agencies, valid signup immediately Pending, no mandatory KYC/email-verification gate. D-022 mandatory reasons for Request Changes/Reject.
+- D-029/D-033/D-077/D-084/D-091/D-099: first public website Live automatically only after Super Admin approval + genuine readiness incl consciously selected public phone/WhatsApp, with zero properties valid and NO owner initial Submit/Publish.
+- D-053/D-063/D-079/D-087/D-090: already-Live draft changes only via deliberate owner atomic Publish Updates; old Live preserved on failure.
+- D-072: Super Admin and Agency Owner only in pilot. D-080/D-113: no CRM/billing in free pilot.
+- D-074/D-081/D-088/D-089: secure separate management session host boundaries, CSRF/Origin checks and trusted agencyId data scoping; cross-tenant tests.
+- D-083: Blocked/Deactivated agency websites non-public; restore eligibility recheck.
+- D-115: write/approve versioned REST auth+tenant+error contract BEFORE implementing each product feature.
 
-Prefer small, maintainable pilot work. Protect tenant isolation, private drafts and secure media when future feature work is explicitly authorized. Keep zero-property sites useful without fake listings. Work in the existing repository and do not overwrite another agent's changes. Verify commands and results honestly; review the diff and staged files for secrets before a permitted commit. Update docs/AI/CURRENT-STATE.md and docs/AI/HANDOVER-LATEST.md with actual results at the end of meaningful work. Preserve confirmed decision documents and historical planning records.
+## Code repository
+
+One root npm workspaces monorepo (`frontend/` 4000, `admin/` 4001, `super-admin/` 4002, `backend/` 4003). Root Git already initialized/pushed per owner; do not `git init` or push without permission. Old pnpm/apps/packages setup proposals historical.
+
+## Agent workflow
+
+Before task: inspect actual code, Git and active decisions; identify explicit authorized scope. During: small secure changes only within scope. After: run available checks and record actual outcomes, files and next steps in current state and handover. Never invent successful tests, provider choices, approval, legal compliance or launched sites.

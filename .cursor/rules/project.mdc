@@ -1,14 +1,16 @@
 ---
-description: EstateOS current project and handover rules
+description: EstateOS latest approved planning and AI handover rules
 alwaysApply: true
 ---
 
-# EstateOS — v5.8 / Phase 0.5
+# EstateOS Cursor project rule — v5.9
 
-Follow AGENTS.md. Read docs/AI/CURRENT-STATE.md, docs/DECISIONS.md, docs/MVP-RESET-v1.7.md, docs/AI/HANDOVER-LATEST.md, docs/OPEN-QUESTIONS.md and the active milestone. The locked planning index and v5.8 confirmed map point to canonical decision specs. Older version banners, proposals and discussion files are history when conflicting with confirmed policy.
+Read root `AGENTS.md` and `docs/PLANNING-INDEX-LOCKED-v5.9.md`; follow `docs/DECISIONS.md`, `docs/IMPLEMENTATION-READINESS-v5.9-CONFIRMED-MAP.md`, `docs/AI/CURRENT-STATE.md`, `docs/AI/HANDOVER-LATEST.md` and relevant canonical specs.
 
-The owner authorized Phase 0.5 verification, minor foundation fixes, instruction/handover reconciliation and a local commit. Git already exists at the root and has a remote. Inspect status, branch and commits first; never initialize Git, create nested repositories, alter remotes or push without explicit permission. Four root npm workspaces: frontend 4000, admin 4001, super-admin 4002, backend 4003 with /api/health. Do not implement authentication, business models, agency APIs, property CRUD or publishing features.
+- D-088–D-119 all owner-CONFIRMED Option A as policy; prior D-001–D-087 preserved. Proposal text never gives implementation permission.
+- Explicit separate feature authorization and D-115 reviewed API/data/security contract before new business code.
+- D-028 lean Pending agency signup; first Live automatic on approval + readiness and D-099 chosen public contact, no initial Publish; after-Live Publish Updates atomic; no cross-tenant data exposure.
+- Root npm workspaces: frontend 4000, admin 4001, super-admin 4002, backend 4003. Existing root Git must not be reset or pushed without approval.
+- Update concise AI handover with real work and verification.
 
-Preserve all confirmed decisions in their canonical specs. Especially D-022/D-028 lean Pending/manual review with reasons and no KYC gate; D-029/D-033/D-077/D-084 automatic first Live after approval plus readiness (zero properties valid, eligible saved properties included, no initial owner Publish); D-053/D-063/D-079 deliberate atomic post-Live Publish Updates; D-081–D-087 host-scoped sessions, stable slug, non-public Blocked/Deactivated sites, first snapshot, Profile draft mapping, secure processed images and safe retry. D-088–D-094 are proposed only. The details left open in the v5.8 map remain open.
-
-Before a permitted commit, review diff and staged files for secrets. Run applicable checks and report exact results. Update docs/AI/CURRENT-STATE.md and docs/AI/HANDOVER-LATEST.md after meaningful work. One agent edits the shared worktree at a time.
+Older Cursor rule preserved byte-for-byte: `docs/AI/HISTORY-v5.8-.cursor-rules-project.mdc`.

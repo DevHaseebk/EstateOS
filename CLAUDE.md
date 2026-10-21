@@ -1,9 +1,15 @@
-# Claude Code — EstateOS (current v5.8)
+# Claude Code — EstateOS v5.9
 
-Follow AGENTS.md and the current planning sources: docs/PLANNING-INDEX-LOCKED-v5.8.md, docs/IMPLEMENTATION-READINESS-v5.8-CONFIRMED-MAP.md, docs/DECISIONS.md, docs/AI/CURRENT-STATE.md and docs/AI/HANDOVER-LATEST.md. Read the active milestone. Proposals and earlier version snapshots are historical when they conflict with confirmed v5.8 policy.
+Read root `AGENTS.md` first; those product/architecture rules apply equally to Claude, Codex and Cursor. Read `docs/AI/CURRENT-STATE.md` and `docs/AI/HANDOVER-LATEST.md` before every meaningful task.
 
-The owner authorized Phase 0.5 verification, minor foundation fixes, AI instruction and handover reconciliation, and a local commit in the existing root Git repository. Do not initialize Git, change its remote, create nested repositories or push without explicit owner permission. Four root npm workspaces use ports 4000/4001/4002/4003 (frontend/admin/super-admin/backend). Business-feature code remains out of scope: no auth, agency or property APIs/models, CRUD or publishing implementation.
+## Use confirmed specifications, not historical proposals
 
-Preserve every confirmed decision by referring to its canonical spec. Key invariants: D-028 lean Pending/manual review without KYC or verified-email gate; D-022 required review reasons; D-029/D-033/D-077/D-084 automatic first Live after approval and readiness with zero properties allowed and eligible saved properties included; D-053/D-063/D-079 deliberate atomic Publish Updates after Live; D-081–D-087 confirmed session, slug, restriction, first snapshot, Profile mapping, media privacy and retry policies. D-088–D-094 remain proposed.
+Latest source: `docs/PLANNING-INDEX-LOCKED-v5.9.md` and `docs/IMPLEMENTATION-READINESS-v5.9-CONFIRMED-MAP.md`. ALL D-088–D-119 Option A are owner-confirmed policy; prior D-001–D-087 preserved. Exact implementation contracts, runtime secrets and release evidence are not blanket-approved.
 
-Inspect Git state before edits, use compatible Node, verify actual typecheck/lint/build and backend health, review the diff and staged content, and record observed results in docs/AI/CURRENT-STATE.md and docs/AI/HANDOVER-LATEST.md. Do not claim unrun checks passed.
+## Current authorization
+
+User authorized earlier Phase 0 scaffolding and AI tooling/setup. This planning deliverable does **not** authorize auth/tenant business feature coding. Phase 1 must receive a separately owner-approved milestone AND first a reviewed D-115 API/security/schema contract.
+
+## Handover
+
+After work report real changes, tests, blockers and next steps in `docs/AI/CURRENT-STATE.md` and `docs/AI/HANDOVER-LATEST.md`. Never push, reset or overwrite active project changes without owner's instruction. Historical original Claude instructions preserved under `docs/AI/HISTORY-v5.8-CLAUDE.md`.

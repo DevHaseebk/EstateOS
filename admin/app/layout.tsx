@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'EstateOS — Agency Admin',
-  description: 'EstateOS agency admin placeholder.',
+  description: 'Secure EstateOS agency account access.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

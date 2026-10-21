@@ -1,3 +1,9 @@
+# HISTORICAL PROPOSAL ONLY — D-088–D-094 (superseded by v5.9 owner approvals)
+
+**Do not use these old option letters as active requirements.** The selected D-088 through D-094 Option A now have canonical `docs/MVP-D088-CONFIRMED.md` ... `docs/MVP-D094-CONFIRMED.md`, and the old proposal used different wording for D-088. Retained below for provenance.
+
+---
+
 # D-088–D-094 — NEXT BUILD-CONTRACT BATCH (PROPOSED ONLY)
 
 **NOT APPROVED.** This batch is deliberately implementation-facing. Product/architecture decisions D-001–D-087 preserve precedence; never equate reviewing these options with permission to code. Review product repo/Phase 0 status before requesting feature implementation.

@@ -3,7 +3,7 @@ import { env } from './env.js';
 
 export async function connectDatabase(): Promise<void> {
   if (!env.mongoUri) {
-    console.warn('MONGODB_URI is unset; API will run without a database connection.');
+    console.warn('MONGODB_URI is unset; authentication is unavailable.');
     return;
   }
 
@@ -17,4 +17,8 @@ export async function connectDatabase(): Promise<void> {
 
 export function databaseStatus(): string {
   return ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState] ?? 'unknown';
+}
+
+export function requireDatabase(): void {
+  if (mongoose.connection.readyState !== 1) throw new Error('AUTH_UNAVAILABLE');
 }
