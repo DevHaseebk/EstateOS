@@ -45,7 +45,21 @@ export const ACTION_LABELS: Record<string, string> = {
   REVIEW_REJECT: 'Rejected',
   REVIEW_REOPEN: 'Reopened for review',
   OWNER_RESUBMIT: 'Owner resubmitted for review',
+  RESTRICT_BLOCK: 'Blocked',
+  RESTRICT_DEACTIVATE: 'Deactivated',
+  RESTRICT_RESTORE: 'Restored',
 };
+
+export const RESTRICTION_LABELS: Record<string, string> = {
+  NONE: 'Active',
+  BLOCKED: 'Blocked',
+  DEACTIVATED: 'Deactivated',
+};
+
+/** Label for a value on either state axis (used by the history list). */
+export function statusLabel(value: string): string {
+  return REVIEW_LABELS[value] ?? RESTRICTION_LABELS[value] ?? value;
+}
 
 export function formatDate(value: string | null | undefined): string {
   return value ? new Date(value).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—';

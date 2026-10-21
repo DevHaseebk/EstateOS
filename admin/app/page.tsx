@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { ReviewStatusCard } from './components/ReviewStatusCard';
 
 type Mode = 'login' | 'register' | 'recovery';
-type Session = { user: { id: string; name: string; role: string }; agency: { id: string; reviewStatus: string } };
+type Session = { user: { id: string; name: string; role: string }; agency: { id: string; reviewStatus: string; restrictionStatus: string } };
 
 async function mutation(path: string, method: 'POST' | 'DELETE', body?: Record<string, FormDataEntryValue>) {
   const csrfResponse = await fetch('/api/v1/auth/csrf', { cache: 'no-store' });
@@ -37,6 +37,7 @@ export default function Home() {
       .then(async (response) => response.ok ? (await response.json()).data as Session : null)
       .then(setSession).catch(() => setSession(null)).finally(() => setLoading(false));
   }, []);
+  const sessionEnded = useCallback(() => { setSession(null); setMode('login'); setNotice('Your session has ended. Please sign in again.'); }, []);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(''); setNotice('');
     const data = Object.fromEntries(new FormData(event.currentTarget));
@@ -68,7 +69,7 @@ export default function Home() {
     <section className="auth-card" aria-label="Agency account">
       {loading ? <p role="status">Checking your session…</p> : session ? <>
         <p className="eyebrow">Signed in</p><h2>Welcome, {session.user.name}</h2>
-        <ReviewStatusCard agencyId={session.agency.id} />
+        <ReviewStatusCard agencyId={session.agency.id} onSessionEnded={sessionEnded} />
         <button type="button" className="primary" disabled={busy} onClick={logout}>Sign out</button>
       </> : <>
         <div className="auth-tabs"><button type="button" className={mode === 'login' ? 'selected' : ''} onClick={() => { setMode('login'); setError(''); }}>Sign in</button>

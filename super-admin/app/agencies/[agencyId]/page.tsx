@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { AdminHeader } from '../../components/AdminHeader';
 import { DecisionDialog, type DecisionKind } from '../../components/DecisionDialog';
-import { ACTION_LABELS, ApiError, apiGet, apiMutation, formatDate, REVIEW_LABELS } from '../../lib/api';
+import { ACTION_LABELS, ApiError, apiGet, apiMutation, formatDate, RESTRICTION_LABELS, REVIEW_LABELS, statusLabel } from '../../lib/api';
 
 type Detail = {
   id: string;
@@ -14,11 +14,23 @@ type Detail = {
   createdAt: string;
   review: { status: string; version: number; latestReview: { action: string; reason?: string; decidedAt: string } | null; submittedForReviewAt: string };
   restrictionStatus: string;
+  restriction: { status: string; version: number; latestRestriction: { action: string; reason: string; decidedAt: string } | null };
   websiteReadiness: string;
   publicationStatus: string;
-  history: { at: string; action: string; actorRole: string; fromStatus: string; toStatus: string; reason?: string }[];
+  history: { at: string; axis: string; action: string; actorRole: string; fromStatus: string; toStatus: string; reason?: string }[];
 };
 type Session = { user: { name: string } };
+
+const RESTRICTION_KINDS = ['BLOCK', 'DEACTIVATE', 'RESTORE'] as const;
+const DONE_NOTICE: Record<DecisionKind, string> = {
+  APPROVE: 'Agency approved. Its website is not live until it is also ready.',
+  REQUEST_CHANGES: 'Change request sent to the owner.',
+  REJECT: 'Agency rejected.',
+  REOPEN: 'Agency reopened for review.',
+  BLOCK: 'Agency blocked. The owner has been signed out.',
+  DEACTIVATE: 'Agency deactivated. The owner now has read-only access.',
+  RESTORE: 'Agency restored. The owner has normal access again.',
+};
 
 // D-065: one responsive review page; review status and website readiness shown separately.
 export default function AgencyReviewPage() {
@@ -43,11 +55,13 @@ export default function AgencyReviewPage() {
     if (!detail || !dialog) return;
     const expectedReviewVersion = detail.review.version;
     try {
-      if (dialog === 'REOPEN') await apiMutation(`/api/v1/super-admin/agencies/${detail.id}/reopen`, 'POST', { reason, expectedReviewVersion });
+      if ((RESTRICTION_KINDS as readonly string[]).includes(dialog)) {
+        await apiMutation(`/api/v1/super-admin/agencies/${detail.id}/restrictions`, 'POST', { action: dialog, reason, expectedRestrictionVersion: detail.restriction.version });
+      } else if (dialog === 'REOPEN') await apiMutation(`/api/v1/super-admin/agencies/${detail.id}/reopen`, 'POST', { reason, expectedReviewVersion });
       else await apiMutation(`/api/v1/super-admin/agencies/${detail.id}/review-decisions`, 'POST', { decision: dialog, ...(reason ? { reason } : {}), expectedReviewVersion });
       const done = dialog;
       setDialog(null);
-      setNotice(done === 'APPROVE' ? 'Agency approved. Its website is not live until it is also ready.' : done === 'REQUEST_CHANGES' ? 'Change request sent to the owner.' : done === 'REJECT' ? 'Agency rejected.' : 'Agency reopened for review.');
+      setNotice(DONE_NOTICE[done]);
       await load();
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 409) {
@@ -67,6 +81,8 @@ export default function AgencyReviewPage() {
 
   const status = detail.review.status;
   const latest = detail.review.latestReview;
+  const restriction = detail.restriction;
+  const restricted = restriction.status !== 'NONE';
   return <>
     <AdminHeader name={session.user.name} onSignedOut={() => setState('signed-out')} />
     <main className="admin-page review-page">
@@ -86,26 +102,49 @@ export default function AgencyReviewPage() {
           </dl>
           <div className="badges">
             <span className={`badge review-${status.toLowerCase()}`}>Review: {REVIEW_LABELS[status] ?? status}</span>
+            {restricted && <span className={`badge account-${restriction.status.toLowerCase()}`}>Account: {RESTRICTION_LABELS[restriction.status]}</span>}
             <span className="badge neutral">Website: not ready (website builder comes later)</span>
           </div>
           <button type="button" className="secondary" disabled title="Available after the website builder">Private preview — available after the website builder</button>
           {latest?.reason && <div className="latest-reason"><p className="eyebrow">Latest reason ({ACTION_LABELS[`REVIEW_${latest.action}`] ?? latest.action})</p><p>{latest.reason}</p></div>}
         </section>
 
+        <div className="side-stack">
         <section className="panel decision-panel" aria-labelledby="decision-title-area">
           <h2 id="decision-title-area">Decision</h2>
-          {status === 'PENDING' && <div className="decision-buttons">
+          {restricted && <p>Restore this agency before making review decisions.</p>}
+          {!restricted && status === 'PENDING' && <div className="decision-buttons">
             <button type="button" className="primary-inline" onClick={() => setDialog('APPROVE')}>Approve</button>
             <button type="button" className="secondary" onClick={() => setDialog('REQUEST_CHANGES')}>Request changes</button>
             <button type="button" className="danger" onClick={() => setDialog('REJECT')}>Reject</button>
           </div>}
-          {status === 'CHANGES_REQUESTED' && <p>Waiting for the owner to make changes and resubmit for review.</p>}
-          {status === 'APPROVED' && <p>This agency is approved. No further review decision is needed.</p>}
-          {status === 'REJECTED' && <>
+          {!restricted && status === 'CHANGES_REQUESTED' && <p>Waiting for the owner to make changes and resubmit for review.</p>}
+          {!restricted && status === 'APPROVED' && <p>This agency is approved. No further review decision is needed.</p>}
+          {!restricted && status === 'REJECTED' && <>
             <p>This agency was rejected. You can reopen it for another manual review.</p>
             <button type="button" className="secondary" onClick={() => setDialog('REOPEN')}>Reopen for review</button>
           </>}
         </section>
+
+        <section className="panel account-panel" aria-labelledby="account-title">
+          <h2 id="account-title">Account status</h2>
+          {!restricted ? <>
+            <p><strong>Active.</strong> The owner has normal access.</p>
+            <ul className="account-help">
+              <li><strong>Deactivate</strong>: the owner can sign in but cannot change anything.</li>
+              <li><strong>Block</strong>: the owner is signed out and cannot sign in.</li>
+            </ul>
+            <div className="decision-buttons">
+              <button type="button" className="secondary" onClick={() => setDialog('DEACTIVATE')}>Deactivate</button>
+              <button type="button" className="danger" onClick={() => setDialog('BLOCK')}>Block</button>
+            </div>
+          </> : <>
+            <p><strong>{RESTRICTION_LABELS[restriction.status]}</strong>{restriction.latestRestriction && <> since {formatDate(restriction.latestRestriction.decidedAt)}</>}</p>
+            {restriction.latestRestriction && <p className="history-reason">{restriction.latestRestriction.reason}</p>}
+            <button type="button" className="secondary" onClick={() => setDialog('RESTORE')}>Restore agency</button>
+          </>}
+        </section>
+        </div>
       </div>
 
       <section className="panel" aria-labelledby="history-title">
@@ -113,7 +152,7 @@ export default function AgencyReviewPage() {
         {detail.history.length === 0 ? <p>No review actions yet.</p> : <ol className="history">
           {detail.history.map((entry, index) => <li key={`${entry.at}-${index}`}>
             <p><strong>{ACTION_LABELS[entry.action] ?? entry.action}</strong> · {formatDate(entry.at)} · by {entry.actorRole === 'SUPER_ADMIN' ? 'Super Admin' : 'Agency owner'}</p>
-            <p className="queue-meta">{REVIEW_LABELS[entry.fromStatus]} → {REVIEW_LABELS[entry.toStatus]}</p>
+            <p className="queue-meta">{entry.axis === 'RESTRICTION' ? 'Account: ' : ''}{statusLabel(entry.fromStatus)} → {statusLabel(entry.toStatus)}</p>
             {entry.reason && <p className="history-reason">{entry.reason}</p>}
           </li>)}
         </ol>}

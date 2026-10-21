@@ -36,3 +36,17 @@ export const reviewQueueQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: z.string().max(200).optional(),
 });
+
+// Phase 2b directory and restriction contract §6.
+export const restrictionSchema = z.strictObject({
+  action: z.enum(['BLOCK', 'DEACTIVATE', 'RESTORE']),
+  reason: reviewReason,
+  expectedRestrictionVersion: z.number().int().min(0),
+});
+export const directoryQuerySchema = z.strictObject({
+  q: z.string().trim().min(2, 'Search must be at least 2 characters').max(100).optional(),
+  review: z.enum(['PENDING', 'CHANGES_REQUESTED', 'APPROVED', 'REJECTED']).optional(),
+  restriction: z.enum(['NONE', 'BLOCKED', 'DEACTIVATED']).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.string().max(200).optional(),
+});

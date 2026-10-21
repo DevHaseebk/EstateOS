@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
-import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requirePortal, type AuthRequest } from './auth.js';
+import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requireOwnerWritable, requirePortal, type AuthRequest } from './auth.js';
 import { Agency, AgencyAudit, REVIEW_STATUSES, User } from './models.js';
+import { applyRestrictionTransition, restrictionView } from './restriction.js';
 import { applyReviewTransition, ownerReviewView, reviewView } from './review.js';
 import { ownerScope, superAdminScope } from './tenant.js';
-import { reopenSchema, resubmitSchema, reviewDecisionSchema, reviewQueueQuerySchema } from './validation.js';
+import { directoryQuerySchema, reopenSchema, restrictionSchema, resubmitSchema, reviewDecisionSchema, reviewQueueQuerySchema } from './validation.js';
 
-// Phase 2a Super Admin review lifecycle (docs/PHASE-2A-REVIEW-CONTRACT-APPROVED.md).
+// Phase 2a review lifecycle and Phase 2b directory/restrictions
+// (docs/PHASE-2A-REVIEW-CONTRACT-APPROVED.md, docs/PHASE-2B-DIRECTORY-RESTRICTIONS-CONTRACT-APPROVED.md).
 const router = Router();
 const OBJECT_ID = /^[a-f0-9]{24}$/i;
 
@@ -25,9 +27,10 @@ async function requireSuperAdmin(request: AuthRequest, mutation: boolean) {
 }
 
 type QueueCursor = { t: Date; id: mongoose.Types.ObjectId };
-function encodeCursor(agency: { submittedForReviewAt?: Date | null; _id: mongoose.Types.ObjectId }): string {
-  return Buffer.from(JSON.stringify({ t: agency.submittedForReviewAt?.toISOString(), id: String(agency._id) })).toString('base64url');
+function encodeCursor(t: Date | null | undefined, id: mongoose.Types.ObjectId): string {
+  return Buffer.from(JSON.stringify({ t: t?.toISOString(), id: String(id) })).toString('base64url');
 }
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function decodeCursor(cursor: string): QueueCursor {
   try {
     const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { t?: string; id?: string };
@@ -59,8 +62,42 @@ router.get('/super-admin/review-queue', asyncRoute(async (request, response) => 
       id: String(agency._id), agencyName: agency.name, ownerName: ownerNames.get(String(agency._id)) ?? null,
       submittedForReviewAt: agency.submittedForReviewAt, reviewStatus: agency.reviewStatus,
     })),
-    nextCursor: found.length > limit && last ? encodeCursor(last) : null,
+    nextCursor: found.length > limit && last ? encodeCursor(last.submittedForReviewAt, last._id) : null,
     counts,
+  } });
+}));
+
+router.get('/super-admin/agencies', asyncRoute(async (request, response) => {
+  await requireSuperAdmin(request, false);
+  const { q, review, restriction, limit, cursor } = directoryQuerySchema.parse(request.query);
+  const conditions: Record<string, unknown>[] = [];
+  if (review) conditions.push({ reviewStatus: review });
+  if (restriction) conditions.push(restriction === 'NONE' ? { restrictionStatus: { $in: ['NONE', null] } } : { restrictionStatus: restriction });
+  if (q) {
+    // User input is escaped, so it always matches literally (never as a regular expression).
+    const pattern = new RegExp(escapeRegex(q), 'i');
+    const owners = await User.find({ role: 'AGENCY_OWNER', emailNormalized: pattern }).select('agencyId').limit(500).lean();
+    conditions.push({ $or: [{ name: pattern }, { _id: { $in: owners.map((owner) => owner.agencyId) } }] });
+  }
+  if (cursor) {
+    const after = decodeCursor(cursor);
+    conditions.push({ $or: [{ createdAt: { $lt: after.t } }, { createdAt: after.t, _id: { $lt: after.id } }] });
+  }
+  const found = await Agency.find(conditions.length ? { $and: conditions } : {}).sort({ createdAt: -1, _id: -1 }).limit(limit + 1).lean();
+  const page = found.slice(0, limit);
+  const owners = await User.find({ role: 'AGENCY_OWNER', agencyId: { $in: page.map((agency) => agency._id) } }).select('agencyId name emailNormalized').lean();
+  const ownerByAgency = new Map(owners.map((owner) => [String(owner.agencyId), owner]));
+  const last = page.at(-1);
+  response.json({ data: {
+    items: page.map((agency) => {
+      const owner = ownerByAgency.get(String(agency._id));
+      return {
+        id: String(agency._id), agencyName: agency.name, ownerName: owner?.name ?? null, ownerEmail: owner?.emailNormalized ?? null,
+        createdAt: agency.createdAt, reviewStatus: agency.reviewStatus, restrictionStatus: agency.restrictionStatus ?? 'NONE',
+        websiteReadiness: 'NOT_READY', publicationStatus: agency.publicationStatus ?? 'NEVER_PUBLISHED',
+      };
+    }),
+    nextCursor: found.length > limit && last ? encodeCursor(last.createdAt, last._id) : null,
   } });
 }));
 
@@ -78,10 +115,11 @@ router.get('/super-admin/agencies/:agencyId', asyncRoute(async (request, respons
     createdAt: agency.createdAt,
     review: { ...reviewView(agency), submittedForReviewAt: agency.submittedForReviewAt },
     restrictionStatus: agency.restrictionStatus ?? 'NONE',
+    restriction: restrictionView(agency),
     websiteReadiness: 'NOT_READY',
     publicationStatus: agency.publicationStatus ?? 'NEVER_PUBLISHED',
     history: history.map((entry) => ({
-      at: entry.at, action: entry.action, actorRole: entry.actorRole, fromStatus: entry.fromStatus, toStatus: entry.toStatus,
+      at: entry.at, axis: entry.axis ?? 'REVIEW', action: entry.action, actorRole: entry.actorRole, fromStatus: entry.fromStatus, toStatus: entry.toStatus,
       ...(entry.reason ? { reason: entry.reason } : {}),
     })),
   } });
@@ -109,9 +147,21 @@ router.post('/super-admin/agencies/:agencyId/reopen', asyncRoute(async (request,
   response.json({ data: { review: reviewView(agency) } });
 }));
 
+router.post('/super-admin/agencies/:agencyId/restrictions', asyncRoute(async (request, response) => {
+  const scope = await requireSuperAdmin(request, true);
+  const agencyId = agencyIdParam(request.params.agencyId);
+  const input = restrictionSchema.parse(request.body);
+  const agency = await applyRestrictionTransition({
+    agencyId, action: input.action, actorUserId: scope.userId,
+    expectedRestrictionVersion: input.expectedRestrictionVersion, reason: input.reason, requestId: randomUUID(),
+  });
+  response.json({ data: { restriction: restrictionView(agency) } });
+}));
+
 router.post('/owner/review-resubmissions', asyncRoute(async (request, response) => {
   requirePortal(request, 'OWNER');
   await requireCsrf(request, true);
+  requireOwnerWritable(request);
   rejectAgencyInput(request);
   const input = resubmitSchema.parse(request.body);
   const scope = ownerScope(request.sessionContext!.user);

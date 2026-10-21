@@ -31,6 +31,14 @@ The Phase 2a Super Admin review lifecycle contract is **APPROVED** (2026-10-21) 
 - Checks: typecheck, lint and build pass for all 4 workspaces; `npm test -w backend` passes 26/26; an HTTPS end-to-end round trip passed.
 - Not built yet (Phase 2b and later): Block/Deactivate, website readiness, private preview, publishing, the agency directory. Local dev environment: see `docs/LOCAL-DEV-SETUP.md`.
 
+## Phase 2b status (2026-10-21)
+
+Phase 2b contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-2B-DIRECTORY-RESTRICTIONS-CONTRACT-APPROVED.md`.
+
+- Built: All Agencies directory (search, filters, pagination); Block / Deactivate / Restore with reasons, an audit entry with `axis: RESTRICTION`, and versioning; Block revokes owner sessions in the same transaction; Deactivated owners are read-only; review decisions are frozen while restricted.
+- Checks: typecheck, lint and build pass for all 4 workspaces; `npm test -w backend` passes 40/40; the migration ran on Atlas dev; the HTTPS end-to-end check passed.
+- Font fix (Inter for both portals) committed `18e9c6f`.
+
 ## Next gate (written before Phase 1; kept for history)
 
 Review actual repo/active Git diff; reconcile AI setup; document Phase 1 exact server session/CSRF/dev host, agency/user/session bootstrap/recovery, tenant-scoping and versioned auth API contracts with tests. Obtain explicit owner approval **before auth/tenant business code**. Suggested prompt: `docs/AI/PHASE-1-AUTH-TENANT-CODEX-PROMPT.md`.

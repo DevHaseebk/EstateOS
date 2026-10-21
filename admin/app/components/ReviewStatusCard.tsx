@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 type Review = { status: string; version: number; latestReview: { action: string; reason?: string; decidedAt: string } | null };
-type AgencyReview = { name: string; review: Review; canResubmit: boolean; canEdit: boolean };
+type AgencyReview = { name: string; review: Review; canResubmit: boolean; canEdit: boolean; restriction: { status: string; reason?: string } };
 type ErrorPayload = { error?: { message?: string; details?: Record<string, string> } } | null;
 
 function messageFrom(payload: ErrorPayload, fallback: string): string {
@@ -12,7 +12,8 @@ function messageFrom(payload: ErrorPayload, fallback: string): string {
 }
 
 // D-067/D-068/D-073: truthful review status, the latest reason, and Resubmit only after Request Changes.
-export function ReviewStatusCard({ agencyId }: { agencyId: string }) {
+// Phase 2b: a Deactivated agency is read-only; a Blocked agency loses its session (onSessionEnded).
+export function ReviewStatusCard({ agencyId, onSessionEnded }: { agencyId: string; onSessionEnded: () => void }) {
   const [agency, setAgency] = useState<AgencyReview | null>(null);
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
@@ -23,10 +24,11 @@ export function ReviewStatusCard({ agencyId }: { agencyId: string }) {
     fetch(`/api/v1/owner/agencies/${agencyId}`, { cache: 'no-store' })
       .then(async (response) => {
         const payload = await response.json().catch(() => null);
+        if (response.status === 401) { onSessionEnded(); return; }
         if (!response.ok) throw new Error(messageFrom(payload, 'Could not load your agency status'));
         setAgency(payload.data as AgencyReview);
       })
-      .catch((failure: unknown) => setError(failure instanceof Error ? failure.message : 'Could not load your agency status')), [agencyId]);
+      .catch((failure: unknown) => setError(failure instanceof Error ? failure.message : 'Could not load your agency status')), [agencyId, onSessionEnded]);
   useEffect(() => { void load(); }, [load]);
 
   async function resubmit() {
@@ -42,7 +44,8 @@ export function ReviewStatusCard({ agencyId }: { agencyId: string }) {
         body: JSON.stringify({ expectedReviewVersion: agency.review.version }),
       });
       const payload = await response.json().catch(() => null);
-      if (response.status === 409) { setNotice('Your agency status changed. The latest status is shown.'); await load(); return; }
+      if (response.status === 401) { onSessionEnded(); return; }
+      if (response.status === 403 || response.status === 409) { setNotice('Your agency status changed. The latest status is shown.'); await load(); return; }
       if (!response.ok) throw new Error(messageFrom(payload, 'Could not resubmit'));
       setNotice('Resubmitted. Your agency is waiting for review again.');
       await load();
@@ -52,6 +55,12 @@ export function ReviewStatusCard({ agencyId }: { agencyId: string }) {
 
   if (!agency) return error ? <p className="form-error" role="alert">{error}</p> : <p role="status">Loading your agency status…</p>;
   const { status, latestReview } = agency.review;
+  if (agency.restriction.status === 'DEACTIVATED') return <div className="status-card status-deactivated">
+    <p className="status-title">Account deactivated</p>
+    {agency.restriction.reason && <p className="status-reason">{agency.restriction.reason}</p>}
+    <p>Your agency account is deactivated, so you can view it but not make changes. Please contact EstateOS support.</p>
+    {notice && <p className="form-notice" role="status">{notice}</p>}
+  </div>;
   return <div className={`status-card status-${status.toLowerCase()}`}>
     {status === 'PENDING' && <><p className="status-title">Waiting for review</p><p>Your agency is waiting for review by the EstateOS team. Your website is not public yet.</p></>}
     {status === 'CHANGES_REQUESTED' && <>

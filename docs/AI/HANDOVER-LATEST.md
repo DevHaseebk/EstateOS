@@ -1,3 +1,51 @@
+# EstateOS — Phase 2b All Agencies directory and Block / Deactivate: implemented and verified by Claude (2026-10-21)
+
+## Current task
+- Contract: `docs/PHASE-2B-DIRECTORY-RESTRICTIONS-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-21, including the section 9 confirmations.
+- Git: branch `master`, HEAD `18e9c6f` (pushed). **All Phase 2b work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-070, D-071, D-072, D-073, D-074, D-081, D-083, D-089, D-092, D-102, D-115.
+
+## Work completed
+- **Backend**
+  - `models.ts`: `restrictionStatus` is now NONE/BLOCKED/DEACTIVATED; adds `restrictionVersion`, `latestRestriction` and the directory indexes. The audit gets an `axis` field (REVIEW/RESTRICTION) and the `RESTRICT_*` actions.
+  - `restriction.ts` (new): transition table, views, and `applyRestrictionTransition`, which in one transaction does the version/state check, the conditional update, owner session revocation on Block, and the audit entry.
+  - `review.ts`: any review transition on a restricted agency → 409 `AGENCY_RESTRICTED`; the conditional update also requires `restrictionStatus: NONE`.
+  - `auth.ts`:
+    - owner login on a Blocked agency → 403 `AGENCY_BLOCKED`, only after a correct password;
+    - `currentSession` treats a Blocked agency as signed out (401, defence in depth);
+    - `requireOwnerWritable` → 403 `AGENCY_DEACTIVATED`;
+    - the owner session and agency responses include the restriction.
+  - `review-routes.ts`: `GET /super-admin/agencies` (regex-escaped search over agency name and owner email; filters; newest-first cursor), detail `restriction` plus history `axis`, `POST …/restrictions`, and the Resubmit write guard.
+  - `validation.ts`: `restrictionSchema` and `directoryQuerySchema`.
+  - The migration CLI also sets `restrictionVersion` and the audit `axis`.
+- **BFF**: the Super Admin allow-list adds the list and restrictions routes.
+- **Super Admin UI**
+  - Header navigation: Review queue first, then All agencies.
+  - New `/agencies` directory: filters kept in the URL, desktop rows and mobile cards, View / Manage.
+  - The agency page has an **Account status** panel with Deactivate, Block and Restore dialogs. While restricted, the decision area shows "Restore first". The history labels both axes.
+- **Agency Admin UI**: Deactivated card with the reason, Resubmit hidden. When a session ends (Block), the page returns to sign-in with a notice. The Blocked sign-in message comes from the API.
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (all 4 workspaces) → exit 0.
+- `npm test -w backend` → **40/40** (new `test/restriction.test.ts`, 13 tests; `bff.test.ts` +1).
+- Test fix: both migration tests now spawn the CLI asynchronously. `spawnSync` blocked the test process, so the in-memory mongod's piped log filled up and it stalled (30 s timeout).
+- `migrate:review-axes` on Atlas dev: 5 updates, then 0.
+- HTTPS end-to-end check with the synthetic test owner:
+  - directory search;
+  - Deactivate: the owner sees the reason; Resubmit → `AGENCY_DEACTIVATED`; a decision → `AGENCY_RESTRICTED`;
+  - Restore, then Block: the old cookie → 401; login → `AGENCY_BLOCKED`;
+  - Restore again: login → 200;
+  - owner → directory → 404.
+  - The test agency ends **PENDING / NONE**. The owner's own registered agency was not touched.
+- Not verified: a visual click-through of the new screens in Chrome or Edge.
+
+## Handoff
+- Contract clarification: section 8 test 6 says a Block racing an Approve leads to "exactly one succeeds". Block is valid on an approved agency, so both can succeed when the Approve lands first. The test asserts the real invariant instead: an approval is never recorded after a Block.
+- Not in 2b: public-site suppression pages and cache (Phase 4, D-083); notifications; bulk actions.
+- Preserve: restriction mutations need `expectedRestrictionVersion`; Block plus session revocation plus audit stay in one transaction; search input is always regex-escaped.
+
+---
+
 # EstateOS — Phase 2a Super Admin review lifecycle: implemented and verified by Claude (2026-10-21)
 
 ## Current task

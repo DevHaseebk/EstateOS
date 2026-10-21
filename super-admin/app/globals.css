@@ -93,3 +93,29 @@ textarea:focus-visible, a:focus-visible { outline: 3px solid #14866d; outline-of
   .dialog-actions { flex-direction: column-reverse; }
   .dialog-actions button { width: 100%; }
 }
+
+/* Phase 2b: header navigation, All agencies directory, account status. */
+.admin-nav { display: flex; gap: .25rem; margin-right: auto; }
+.admin-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 .85rem; border-radius: 9px; color: #34463f; font-weight: 600; text-decoration: none; }
+.admin-nav a:hover { background: #eef3ef; }
+.admin-nav a[aria-current="page"] { background: #e3f1eb; color: #0f5a4a; }
+.side-stack { display: grid; gap: 1rem; }
+.account-help { margin: 0 0 1rem; padding-left: 1.1rem; color: #41554f; display: grid; gap: .35rem; }
+.account-blocked { background: #fde8e9; color: #7d1720; }
+.account-deactivated { background: #f1ecfb; color: #4a2a83; }
+.directory-filters { display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) auto; gap: .75rem; align-items: end; margin-bottom: 1.25rem; padding: 1rem; background: #fff; border: 1px solid #d5ded8; border-radius: 14px; }
+.directory-filters label { display: block; margin: 0 0 .35rem; }
+.directory-filters input, .directory-filters select { width: 100%; box-sizing: border-box; min-height: 44px; padding: .55rem .75rem; border: 1px solid #9bab9f; border-radius: 9px; background: #fff; color: #172421; }
+.directory-filters select:focus-visible { outline: 3px solid #14866d; outline-offset: 3px; }
+.filter-actions { display: flex; gap: .5rem; align-items: center; }
+.directory-row { align-items: center; }
+.directory-row .badges { margin: .5rem 0 0; }
+.badge.small { font-size: .8rem; padding: .25rem .6rem; }
+@media (max-width: 860px) {
+  .directory-filters { grid-template-columns: 1fr 1fr; }
+  .directory-filters .search-field, .filter-actions { grid-column: 1 / -1; }
+}
+@media (max-width: 520px) {
+  .directory-filters { grid-template-columns: 1fr; }
+  .admin-nav { order: 3; width: 100%; margin-right: 0; }
+}

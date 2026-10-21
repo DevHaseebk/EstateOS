@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { spawnSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import path from 'node:path';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
@@ -286,15 +286,19 @@ test('migration CLI backfills legacy agencies and is idempotent', async () => {
   const createdAt = new Date('2026-10-01T10:00:00Z');
   await legacyDb.collection('agencies').insertOne({ name: 'Legacy Agency', mobileE164: '+923001234567', whatsappE164: '+923001234567', reviewStatus: 'PENDING', createdAt, updatedAt: createdAt });
   const runner = path.resolve(process.cwd(), '../node_modules/tsx/dist/cli.mjs');
-  const run = () => spawnSync(process.execPath, [runner, 'src/cli/migrate-review-axes.ts'], { cwd: process.cwd(), env: { ...process.env, MONGODB_URI: uri }, encoding: 'utf8', timeout: 30000 });
-  const first = run();
+  // Async on purpose: a sync spawn blocks this process, so the in-memory mongod's piped log fills up and it stalls.
+  const run = () => new Promise<{ status: number | null; stdout: string; stderr: string }>((resolve) => {
+    execFile(process.execPath, [runner, 'src/cli/migrate-review-axes.ts'], { cwd: process.cwd(), env: { ...process.env, MONGODB_URI: uri }, encoding: 'utf8', timeout: 30000 },
+      (error, stdout, stderr) => resolve({ status: error ? (typeof error.code === 'number' ? error.code : null) : 0, stdout, stderr }));
+  });
+  const first = await run();
   assert.equal(first.status, 0, first.stderr);
   const migrated = await legacyDb.collection('agencies').findOne({ name: 'Legacy Agency' });
   assert.equal(migrated?.reviewVersion, 0);
   assert.equal(migrated?.restrictionStatus, 'NONE');
   assert.equal(migrated?.publicationStatus, 'NEVER_PUBLISHED');
   assert.equal((migrated?.submittedForReviewAt as Date).toISOString(), createdAt.toISOString());
-  const second = run();
+  const second = await run();
   assert.equal(second.status, 0, second.stderr);
   assert.match(second.stdout, / 0 field update/);
 });

@@ -42,3 +42,4 @@ input { width: 100%; box-sizing: border-box; min-height: 46px; padding: .7rem .8
 .status-approved { background: #eef8f2; border-color: #b9dcc7; }
 .status-rejected { background: #fff4f4; border-color: #efc2c5; }
 .confirm-row { margin-top: .5rem; }
+.status-deactivated { background: #f4f0fb; border-color: #cfc2ea; }

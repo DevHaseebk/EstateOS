@@ -9,9 +9,10 @@ import { digest, hashPassword, normalizeEmail, preAuthCsrf, randomToken, secureE
 import { loginSchema, resetSchema, signupSchema } from './validation.js';
 import { ownerScope, tenantAgencyFilter } from './tenant.js';
 import { ownerReviewView, ReviewError } from './review.js';
+import { ownerRestrictionView } from './restriction.js';
 
 export type Portal = 'OWNER' | 'SUPER_ADMIN';
-type SessionContext = { session: InstanceType<typeof AuthSession>; user: InstanceType<typeof User>; tokenDigest: string };
+type SessionContext = { session: InstanceType<typeof AuthSession>; user: InstanceType<typeof User>; tokenDigest: string; agencyRestriction?: string };
 export type AuthRequest = Request & { portal?: Portal; sessionContext?: SessionContext };
 const router = Router();
 
@@ -79,11 +80,21 @@ export async function currentSession(request: AuthRequest, required = true): Pro
     if (required) problem(401, 'AUTH_REQUIRED', 'Sign in required');
     return undefined;
   }
+  // Phase 2b §4 defence in depth: a Blocked agency never has a usable owner session, even if revocation was missed.
+  let agencyRestriction: string | undefined;
+  if (expectedRole === 'AGENCY_OWNER') {
+    const agency = await Agency.findById(user.agencyId).select('restrictionStatus').lean();
+    agencyRestriction = agency?.restrictionStatus ?? 'NONE';
+    if (!agency || agencyRestriction === 'BLOCKED') {
+      if (required) problem(401, 'AUTH_REQUIRED', 'Sign in required');
+      return undefined;
+    }
+  }
   if (now.getTime() - session.lastSeenAt.getTime() >= 5 * 60_000) {
     const idleMs = session.portal === 'OWNER' ? 12 * 60 * 60_000 : 30 * 60_000;
     void AuthSession.updateOne({ _id: session._id, revokedAt: { $exists: false } }, { $set: { lastSeenAt: now, idleExpiresAt: new Date(Math.min(now.getTime() + idleMs, session.absoluteExpiresAt.getTime())) } }).catch(() => undefined);
   }
-  const context = { session, user, tokenDigest };
+  const context = { session, user, tokenDigest, agencyRestriction };
   request.sessionContext = context;
   return context;
 }
@@ -110,8 +121,17 @@ export function rejectAgencyInput(request: Request): void {
     problem(422, 'VALIDATION_ERROR', 'agencyId is not accepted');
   }
 }
+/** Phase 2b §4: a Deactivated owner keeps read access but every owner mutation except sign-out is refused. */
+export function requireOwnerWritable(request: AuthRequest): void {
+  if (request.sessionContext?.agencyRestriction === 'DEACTIVATED') {
+    problem(403, 'AGENCY_DEACTIVATED', 'Your agency account is deactivated. Contact EstateOS support.');
+  }
+}
 function ownerData(user: InstanceType<typeof User>, agency: InstanceType<typeof Agency>) {
-  return { user: { id: user.id, name: user.name, role: user.role }, agency: { id: agency.id, reviewStatus: agency.reviewStatus } };
+  return {
+    user: { id: user.id, name: user.name, role: user.role },
+    agency: { id: agency.id, reviewStatus: agency.reviewStatus, restrictionStatus: agency.restrictionStatus ?? 'NONE' },
+  };
 }
 
 /** Runs before every /api/v1 router: internal facade key, database availability, portal header, no-store. */
@@ -182,6 +202,10 @@ async function login(request: AuthRequest, response: Response, portal: Portal): 
   }
   if (portal === 'OWNER' && !user.agencyId) problem(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
   if (portal === 'SUPER_ADMIN' && user.agencyId) problem(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
+  const agency = portal === 'OWNER' ? await Agency.findById(user.agencyId) : null;
+  if (portal === 'OWNER' && !agency) problem(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
+  // Shown only after a correct password, so it reveals nothing about which emails exist (Phase 2b §4).
+  if (agency?.restrictionStatus === 'BLOCKED') problem(403, 'AGENCY_BLOCKED', 'This agency account is blocked. Contact EstateOS support.');
   const token = randomToken();
   const now = new Date();
   const idleMs = portal === 'OWNER' ? 12 * 60 * 60_000 : 30 * 60_000;
@@ -191,11 +215,8 @@ async function login(request: AuthRequest, response: Response, portal: Portal): 
   const sessions = await AuthSession.find({ userId: user._id, portal, revokedAt: { $exists: false } }).sort({ createdAt: -1 }).select('_id');
   const max = portal === 'OWNER' ? 3 : 1;
   if (sessions.length > max) await AuthSession.updateMany({ _id: { $in: sessions.slice(max).map((item) => item._id) } }, { $set: { revokedAt: now } });
-  if (portal === 'OWNER') {
-    const agency = await Agency.findById(user.agencyId);
-    if (!agency) throw new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
-    response.json({ data: ownerData(user, agency), internal: { sessionToken: token } });
-  } else response.json({ data: { user: { id: user.id, name: user.name, role: user.role } }, internal: { sessionToken: token } });
+  if (agency) response.json({ data: ownerData(user, agency), internal: { sessionToken: token } });
+  else response.json({ data: { user: { id: user.id, name: user.name, role: user.role } }, internal: { sessionToken: token } });
 }
 router.post('/owner/sessions', asyncRoute((request, response) => login(request, response, 'OWNER')));
 router.post('/super-admin/sessions', asyncRoute((request, response) => login(request, response, 'SUPER_ADMIN')));
@@ -234,7 +255,7 @@ router.get('/owner/agencies/:agencyId', asyncRoute(async (request, response) => 
   catch { throw new HttpError(404, 'NOT_FOUND', 'Agency not found'); }
   const agency = await Agency.findOne(filter);
   if (!agency) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');
-  response.json({ data: { id: agency.id, name: agency.name, mobile: agency.mobileE164, whatsapp: agency.whatsappE164, reviewStatus: agency.reviewStatus, ...ownerReviewView(agency) } });
+  response.json({ data: { id: agency.id, name: agency.name, mobile: agency.mobileE164, whatsapp: agency.whatsappE164, reviewStatus: agency.reviewStatus, ...ownerReviewView(agency), restriction: ownerRestrictionView(agency) } });
 }));
 
 router.post('/auth/recovery/complete', asyncRoute(async (request, response) => {

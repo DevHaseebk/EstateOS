@@ -81,22 +81,26 @@ export async function applyReviewTransition(input: TransitionInput): Promise<Age
   await mongoose.connection.transaction(async (session) => {
     const agency = await Agency.findById(input.agencyId).session(session);
     if (!agency) throw new ReviewError(404, 'NOT_FOUND', 'Agency not found');
+    // Phase 2b §3: review decisions and Resubmit are frozen while Blocked or Deactivated.
+    if ((agency.restrictionStatus ?? 'NONE') !== 'NONE') {
+      throw new ReviewError(409, 'AGENCY_RESTRICTED', 'Restore this agency before making review decisions');
+    }
     if ((agency.reviewVersion ?? 0) !== input.expectedReviewVersion) {
       throw new ReviewError(409, 'REVIEW_CONFLICT', 'This agency was updated by someone else. Reload and try again.');
     }
-    if (agency.reviewStatus !== rule.from || (input.action === 'RESUBMIT' && (agency.restrictionStatus ?? 'NONE') !== 'NONE')) {
+    if (agency.reviewStatus !== rule.from) {
       throw new ReviewError(409, 'INVALID_TRANSITION', 'This action is not allowed for the agency\'s current status');
     }
     const now = new Date();
     const latestReview = { action: input.action, ...(input.reason ? { reason: input.reason } : {}), decidedAt: now, actorUserId: input.actorUserId };
     const result = await Agency.updateOne(
-      { _id: agency._id, reviewStatus: rule.from, reviewVersion: input.expectedReviewVersion },
+      { _id: agency._id, reviewStatus: rule.from, reviewVersion: input.expectedReviewVersion, restrictionStatus: 'NONE' },
       { $set: { reviewStatus: rule.to, latestReview, ...(rule.to === 'PENDING' ? { submittedForReviewAt: now } : {}) }, $inc: { reviewVersion: 1 } },
       { session },
     );
     if (result.modifiedCount !== 1) throw new ReviewError(409, 'REVIEW_CONFLICT', 'This agency was updated by someone else. Reload and try again.');
     await AgencyAudit.create([{
-      at: now, agencyId: agency._id, actorUserId: input.actorUserId, actorRole: input.actorRole,
+      at: now, agencyId: agency._id, actorUserId: input.actorUserId, actorRole: input.actorRole, axis: 'REVIEW',
       action: AUDIT_ACTIONS[input.action], fromStatus: rule.from, toStatus: rule.to,
       ...(input.reason ? { reason: input.reason } : {}), requestId: input.requestId,
     }], { session });

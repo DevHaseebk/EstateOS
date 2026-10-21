@@ -91,3 +91,30 @@ test('Phase 2a review routes are allow-listed per portal only', async () => {
     assert.equal(forwarded.length, forwardedCount);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Phase 2b directory and restriction routes are Super Admin only', async () => {
+  const originalFetch = globalThis.fetch;
+  const forwarded: string[] = [];
+  globalThis.fetch = async (input: string | URL | Request) => { forwarded.push(String(input)); return Response.json({ data: {} }); };
+  const agencyId = 'b'.repeat(24);
+  const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
+  try {
+    const list = await superAdmin.GET(new NextRequest('https://control.estateos.localhost/api/v1/super-admin/agencies?q=test&review=APPROVED'), ctx(['super-admin', 'agencies']));
+    assert.equal(list.status, 200);
+    assert.match(forwarded.at(-1) ?? '', /\/api\/v1\/super-admin\/agencies\?q=test&review=APPROVED$/);
+    const restrict = await superAdmin.POST(new NextRequest(`https://control.estateos.localhost/api/v1/super-admin/agencies/${agencyId}/restrictions`, {
+      method: 'POST', headers: { origin: 'https://control.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['super-admin', 'agencies', agencyId, 'restrictions']));
+    assert.equal(restrict.status, 200);
+    const forwardedCount = forwarded.length;
+    const ownerList = await owner.GET(new NextRequest('https://admin.estateos.localhost/api/v1/super-admin/agencies'), ctx(['super-admin', 'agencies']));
+    assert.equal(ownerList.status, 404);
+    const ownerRestrict = await owner.POST(new NextRequest(`https://admin.estateos.localhost/api/v1/super-admin/agencies/${agencyId}/restrictions`, {
+      method: 'POST', headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['super-admin', 'agencies', agencyId, 'restrictions']));
+    assert.equal(ownerRestrict.status, 404);
+    const getRestrictions = await superAdmin.GET(new NextRequest(`https://control.estateos.localhost/api/v1/super-admin/agencies/${agencyId}/restrictions`), ctx(['super-admin', 'agencies', agencyId, 'restrictions']));
+    assert.equal(getRestrictions.status, 404);
+    assert.equal(forwarded.length, forwardedCount);
+  } finally { globalThis.fetch = originalFetch; }
+});

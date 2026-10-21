@@ -2,10 +2,19 @@ import mongoose, { Schema } from 'mongoose';
 
 export const REVIEW_STATUSES = ['PENDING', 'CHANGES_REQUESTED', 'APPROVED', 'REJECTED'] as const;
 export const REVIEW_ACTIONS = ['APPROVE', 'REQUEST_CHANGES', 'REJECT', 'RESUBMIT', 'REOPEN'] as const;
+export const RESTRICTION_STATUSES = ['NONE', 'BLOCKED', 'DEACTIVATED'] as const;
+export const RESTRICTION_ACTIONS = ['BLOCK', 'DEACTIVATE', 'RESTORE'] as const;
 
 const latestReviewSchema = new Schema({
   action: { type: String, enum: REVIEW_ACTIONS, required: true },
   reason: { type: String },
+  decidedAt: { type: Date, required: true },
+  actorUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+}, { _id: false });
+
+const latestRestrictionSchema = new Schema({
+  action: { type: String, enum: RESTRICTION_ACTIONS, required: true },
+  reason: { type: String, required: true },
   decidedAt: { type: Date, required: true },
   actorUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 }, { _id: false });
@@ -19,10 +28,16 @@ const agencySchema = new Schema({
   reviewVersion: { type: Number, required: true, default: 0 },
   submittedForReviewAt: { type: Date, required: true, default: Date.now },
   latestReview: { type: latestReviewSchema, default: undefined },
-  restrictionStatus: { type: String, enum: ['NONE'], required: true, default: 'NONE' },
+  restrictionStatus: { type: String, enum: RESTRICTION_STATUSES, required: true, default: 'NONE' },
+  restrictionVersion: { type: Number, required: true, default: 0 },
+  latestRestriction: { type: latestRestrictionSchema, default: undefined },
   publicationStatus: { type: String, enum: ['NEVER_PUBLISHED'], required: true, default: 'NEVER_PUBLISHED' },
 }, { timestamps: true });
 agencySchema.index({ reviewStatus: 1, submittedForReviewAt: 1, _id: 1 });
+// Phase 2b directory: newest first, optionally filtered by one axis.
+agencySchema.index({ createdAt: -1, _id: -1 });
+agencySchema.index({ reviewStatus: 1, createdAt: -1 });
+agencySchema.index({ restrictionStatus: 1, createdAt: -1 });
 
 const userSchema = new Schema({
   role: { type: String, enum: ['AGENCY_OWNER', 'SUPER_ADMIN'], required: true },
@@ -68,15 +83,19 @@ const auditSchema = new Schema({
   createdAt: { type: Date, required: true, default: Date.now },
 }, { versionKey: false });
 
-// D-092: append-only review audit. Writes happen in the same transaction as the status change.
+// D-092: append-only review and restriction audit. Writes happen in the same transaction as the status change.
 const agencyAuditSchema = new Schema({
   at: { type: Date, required: true, default: Date.now, immutable: true },
   agencyId: { type: Schema.Types.ObjectId, ref: 'Agency', required: true, immutable: true },
   actorUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true, immutable: true },
   actorRole: { type: String, enum: ['SUPER_ADMIN', 'AGENCY_OWNER'], required: true, immutable: true },
-  action: { type: String, enum: ['REVIEW_APPROVE', 'REVIEW_REQUEST_CHANGES', 'REVIEW_REJECT', 'REVIEW_REOPEN', 'OWNER_RESUBMIT'], required: true, immutable: true },
-  fromStatus: { type: String, enum: REVIEW_STATUSES, required: true, immutable: true },
-  toStatus: { type: String, enum: REVIEW_STATUSES, required: true, immutable: true },
+  axis: { type: String, enum: ['REVIEW', 'RESTRICTION'], required: true, default: 'REVIEW', immutable: true },
+  action: {
+    type: String, required: true, immutable: true,
+    enum: ['REVIEW_APPROVE', 'REVIEW_REQUEST_CHANGES', 'REVIEW_REJECT', 'REVIEW_REOPEN', 'OWNER_RESUBMIT', 'RESTRICT_BLOCK', 'RESTRICT_DEACTIVATE', 'RESTRICT_RESTORE'],
+  },
+  fromStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES], required: true, immutable: true },
+  toStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES], required: true, immutable: true },
   reason: { type: String, immutable: true },
   requestId: { type: String, immutable: true },
 }, { versionKey: false });
