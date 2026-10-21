@@ -21,10 +21,15 @@ export type WebsiteData = {
   readiness: { ready: boolean; issues: { key: string; message: string }[] };
   heroDefaults: { id: string; label: string }[];
   canEdit: boolean;
+  /** Phase 4a: truthful publication status; a URL only when actually Live. */
+  publication?: { status: 'NEVER_PUBLISHED' | 'ACTIVATION_PENDING' | 'LIVE'; url?: string; firstLiveAt?: string };
 };
 
+/** The renderable part of a website: the saved draft, or a frozen published revision (Phase 4a, D-090). */
+export type SiteContent = Pick<WebsiteData, 'theme' | 'sections' | 'layout' | 'mapped'>;
+
 /** Phase 3c §3: a section is shown only when switched on AND it has its minimum content (never an empty section). */
-function optionalBlocks(website: WebsiteData): OptionalBlock[] {
+function optionalBlocks(website: SiteContent): OptionalBlock[] {
   const { about, services, whyChooseUs, team } = website.sections;
   const blocks: OptionalBlock[] = [];
   for (const key of website.layout.order) {
@@ -38,7 +43,7 @@ function optionalBlocks(website: WebsiteData): OptionalBlock[] {
 }
 
 /** Saved draft → render model (D-052: saved content and the applied theme only). Modern Light stands in until a theme is chosen. */
-export function siteModelFromWebsite(website: WebsiteData, themeOverride?: ThemePreset): SiteModel {
+export function siteModelFromWebsite(website: SiteContent, themeOverride?: ThemePreset): SiteModel {
   const { header, hero, contact } = website.sections;
   const imageUrl = hero.heroImageId ? HERO_IMAGE_SRC[hero.heroImageId] : undefined;
   return {

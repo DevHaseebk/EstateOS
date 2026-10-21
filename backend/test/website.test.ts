@@ -228,14 +228,15 @@ test('Profile saves refresh the mapped values; numbers not chosen as public are 
   assert.equal((await models.WebsiteDraft.findOne({ agencyId: fresh.agencyId }).lean())?.mapped?.whatsapp, '+923007654321');
 });
 
-test('all five essentials make the site READY; approved + ready is still never published', async () => {
+test('all five essentials make the site READY; approving then takes it Live (Phase 4a)', async () => {
   const owner = await newOwner('ready');
   await makeReady(owner.token);
   const site = (await getSite(owner.token)).body.data;
   assert.deepEqual(site.readiness, { ready: true, issues: [] });
   assert.equal((await superPost(`/api/v1/super-admin/agencies/${owner.agencyId}/review-decisions`, { decision: 'APPROVE', expectedReviewVersion: 0 })).status, 200);
   const agency = await models.Agency.findById(owner.agencyId).lean();
-  assert.equal(agency?.publicationStatus, 'NEVER_PUBLISHED');
+  // Phase 3b asserted NEVER_PUBLISHED here; Phase 4a (D-029/D-077) makes approved + ready go Live automatically.
+  assert.equal(agency?.publicationStatus, 'LIVE');
   const detail = await authedGet('SUPER_ADMIN', superToken, `/api/v1/super-admin/agencies/${owner.agencyId}`);
   assert.equal(detail.body.data.websiteReadiness, 'READY');
   assert.deepEqual(detail.body.data.readinessIssues, []);

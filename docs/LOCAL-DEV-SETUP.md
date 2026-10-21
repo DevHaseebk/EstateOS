@@ -24,6 +24,11 @@ From `D:\project\estateos`, in three terminals:
 
 Then open `https://admin.estateos.localhost` (register an agency, sign in) and `https://control.estateos.localhost` (Super Admin sign-in).
 
+**Public agency websites (Phase 4a):**
+- Run `npm run dev:frontend` (port 4000, 127.0.0.1 only). A Live agency opens at `https://<slug>.sites.estateos.localhost`; the Caddy wildcard uses the same trusted local CA.
+- `frontend/.env.local` (gitignored) holds `PUBLIC_API_KEY` (must equal `PUBLIC_API_KEY` in `backend/.env` and differ from `INTERNAL_API_KEY`), `PUBLIC_SITE_DOMAIN` and `API_URL`.
+- No site can be ready until licensed Hero photos are recorded (`site-template/assets/LICENSES.md`). For an end-to-end check only, start the backend with `HERO_DEFAULTS_PATH=backend/test/fixtures/hero-defaults.test.json`. Never use that in production.
+
 ## Notes
 - The admin dev servers bind to `127.0.0.1` only, so the trusted `X-EstateOS-Client-IP` header can only come from Caddy, which overwrites it. Rate limiting therefore sees real client IPs.
 - If your internet IP changes, re-add it in Atlas → Network Access.

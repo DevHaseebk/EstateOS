@@ -4,26 +4,26 @@ import Link from 'next/link';
 import { THEME_LABELS } from 'site-template';
 import { OwnerPage } from '../components/OwnerPage';
 import type { OwnerSession } from '../lib/api';
-import { ISSUE_LINKS, useWebsite } from '../lib/website';
+import { ISSUE_LINKS, useWebsite, websiteStatus } from '../lib/website';
 
-// D-048: status and readiness first, ONE main action, then Theme / Edit website / Preview. No public link before Live (Phase 4).
+// D-048: status and readiness first, ONE main action, then Theme / Edit website / Preview. A public link only when Live (Phase 4a).
 function Hub({ session }: { session: OwnerSession }) {
   const { website, error } = useWebsite();
   if (!website) return error ? <p className="form-error" role="alert">{error}</p> : <p role="status">Loading your website…</p>;
   const { ready, issues } = website.readiness;
-  const approved = session.agency.reviewStatus === 'APPROVED';
+  const status = websiteStatus(website, session.agency.reviewStatus);
   const firstIssue = issues[0] ? ISSUE_LINKS[issues[0].key] : undefined;
-  const main = !website.theme.preset ? { href: '/website/theme', label: 'Choose a theme' }
+  const main = status.url ? { href: status.url, label: 'Open your website' }
+    : !website.theme.preset ? { href: '/website/theme', label: 'Choose a theme' }
     : !ready && firstIssue ? { href: firstIssue.href, label: 'Continue setup' }
       : { href: '/website/preview', label: 'Preview your website' };
   return <>
     <section className="status-summary" aria-label="Website status">
       <div>
         <p className="status-label">Website</p>
-        <p className="status-value">Not live yet</p>
-        <p className="status-hint">{ready
-          ? approved ? 'Ready — going live comes in the next phase.' : 'Ready. It can go live after your agency is approved.'
-          : 'A few essentials are still missing.'}</p>
+        <p className="status-value">{status.label}</p>
+        <p className="status-hint">{status.hint}</p>
+        {status.url && <p className="status-hint"><a href={status.url} target="_blank" rel="noopener noreferrer" className="back-link">{status.url.replace('https://', '')}</a></p>}
       </div>
       <div>
         <p className="status-label">Theme</p>
@@ -40,7 +40,9 @@ function Hub({ session }: { session: OwnerSession }) {
         </li>)}
       </ul>
     </section>}
-    <div className="next-action"><Link href={main.href} className="primary-link">{main.label}</Link></div>
+    <div className="next-action">{status.url
+      ? <a href={main.href} className="primary-link" target="_blank" rel="noopener noreferrer">{main.label}</a>
+      : <Link href={main.href} className="primary-link">{main.label}</Link>}</div>
     <nav className="tool-grid" aria-label="Website tools">
       <Link href="/website/theme" className="tool-card"><strong>Theme</strong><span>Choose one of three styles for your website.</span></Link>
       <Link href="/website/editor" className="tool-card"><strong>Edit website</strong><span>Header, main section and contact details.</span></Link>

@@ -16,3 +16,9 @@ control.estateos.localhost {
 		header_up X-EstateOS-Client-IP {remote_host}
 	}
 }
+
+# Phase 4a: public agency websites, <slug>.sites.estateos.localhost → frontend (D-075). No cookies, read-only.
+*.sites.estateos.localhost {
+	tls internal
+	reverse_proxy 127.0.0.1:4000
+}

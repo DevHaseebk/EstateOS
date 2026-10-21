@@ -3,7 +3,7 @@ import { after, before, test } from 'node:test';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import supertest from 'supertest';
-import { spawnSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import path from 'node:path';
 
 const key = 'test-internal-api-key-with-at-least-thirty-two-characters';
@@ -192,10 +192,15 @@ test('first Super Admin CLI bootstrap is audited and cannot run twice', async ()
   const env = { ...process.env, MONGODB_URI: uri, BOOTSTRAP_OPERATOR: 'synthetic-operator',
     BOOTSTRAP_NAME: 'First Operator', BOOTSTRAP_EMAIL: 'first@example.test', BOOTSTRAP_PASSWORD: password };
   const command = [runner, 'src/cli/bootstrap-super-admin.ts'];
-  const first = spawnSync(process.execPath, command, { cwd: process.cwd(), env, encoding: 'utf8', timeout: 30000 });
+  // Async on purpose: a sync spawn blocks this process, so the in-memory mongod's piped log fills up and it stalls.
+  const run = () => new Promise<{ status: number | null; stdout: string; stderr: string }>((resolve) => {
+    execFile(process.execPath, command, { cwd: process.cwd(), env, encoding: 'utf8', timeout: 30000 },
+      (error, stdout, stderr) => resolve({ status: error ? (typeof error.code === 'number' ? error.code : null) : 0, stdout, stderr }));
+  });
+  const first = await run();
   assert.equal(first.status, 0, first.stderr);
   assert.doesNotMatch(first.stdout, new RegExp(password, 'i'));
-  const second = spawnSync(process.execPath, command, { cwd: process.cwd(), env, encoding: 'utf8', timeout: 30000 });
+  const second = await run();
   assert.notEqual(second.status, 0);
   const bootstrapDb = mongoose.connection.useDb('bootstrap_test');
   assert.equal(await bootstrapDb.collection('users').countDocuments({ role: 'SUPER_ADMIN' }), 1);

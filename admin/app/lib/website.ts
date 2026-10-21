@@ -23,3 +23,14 @@ export function useWebsite() {
   useEffect(() => { void reload(); }, [reload]);
   return { website, setWebsite, error, reload };
 }
+
+/** Phase 4a: one truthful website status for the hub and Overview. A link only when actually Live (D-048, D-054, D-119). */
+export function websiteStatus(website: WebsiteData, reviewStatus: string): { label: string; hint: string; url?: string } {
+  const publication = website.publication ?? { status: 'NEVER_PUBLISHED' as const };
+  if (publication.status === 'LIVE') return { label: 'Live', hint: 'Changes you save stay private until Publish Updates (coming next).', url: publication.url };
+  if (publication.status === 'ACTIVATION_PENDING') return { label: 'Going live', hint: 'Going live — retrying automatically. You do not need to do anything.' };
+  if (!website.readiness.ready) return { label: 'Not live yet', hint: 'A few essentials are still missing.' };
+  return reviewStatus === 'APPROVED'
+    ? { label: 'Going live', hint: 'Your website is ready and is going live now. Refresh in a moment.' }
+    : { label: 'Not live yet', hint: 'Ready. It goes live automatically after your agency is approved.' };
+}

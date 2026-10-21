@@ -1,6 +1,7 @@
 import { app } from './app.js';
 import { connectDatabase } from './config/database.js';
 import { env } from './config/env.js';
+import { startReconciler } from './publication.js';
 
 app.listen(env.port, env.bindHost, (error?: Error) => {
   if (error) {
@@ -10,4 +11,6 @@ app.listen(env.port, env.bindHost, (error?: Error) => {
   }
   console.info(`EstateOS API listening on http://localhost:${env.port}`);
   void connectDatabase();
+  // Phase 4a §3: retries missed or failed first activations every 5 minutes.
+  startReconciler();
 });

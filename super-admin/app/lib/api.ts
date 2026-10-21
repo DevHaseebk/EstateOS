@@ -48,6 +48,7 @@ export const ACTION_LABELS: Record<string, string> = {
   RESTRICT_BLOCK: 'Blocked',
   RESTRICT_DEACTIVATE: 'Deactivated',
   RESTRICT_RESTORE: 'Restored',
+  WEBSITE_FIRST_LIVE: 'Website went Live automatically',
 };
 
 export const RESTRICTION_LABELS: Record<string, string> = {
@@ -56,11 +57,24 @@ export const RESTRICTION_LABELS: Record<string, string> = {
   DEACTIVATED: 'Deactivated',
 };
 
+export const PUBLICATION_LABELS: Record<string, string> = {
+  NEVER_PUBLISHED: 'Not live',
+  ACTIVATION_PENDING: 'Going live',
+  LIVE: 'Live',
+};
+
 /** Label for a value on either state axis (used by the history list). */
 export function statusLabel(value: string): string {
-  return REVIEW_LABELS[value] ?? RESTRICTION_LABELS[value] ?? value;
+  return REVIEW_LABELS[value] ?? RESTRICTION_LABELS[value] ?? PUBLICATION_LABELS[value] ?? value;
 }
 
 export function formatDate(value: string | null | undefined): string {
   return value ? new Date(value).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+}
+
+/** Phase 4a: one website status label for the directory and the agency page (Not ready / Ready / Going live / Live). */
+export function websiteLabel(publicationStatus: string | undefined, readiness: string): { text: string; tone: string } {
+  if (publicationStatus === 'LIVE') return { text: 'Live', tone: 'website-ready' };
+  if (publicationStatus === 'ACTIVATION_PENDING') return { text: 'going live (retrying)', tone: 'website-pending' };
+  return readiness === 'READY' ? { text: 'ready (not live)', tone: 'website-ready' } : { text: 'not ready', tone: 'neutral' };
 }

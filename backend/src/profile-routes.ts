@@ -6,6 +6,7 @@ import { ownerCanEdit, ReviewError } from './review.js';
 import { ownerScope, tenantAgencyFilter } from './tenant.js';
 import { profileSchema } from './validation.js';
 import { mapFromAgency } from './website.js';
+import { afterReadinessChange } from './publication.js';
 
 // Phase 3a Agency Profile (docs/PHASE-3A-AGENCY-PROFILE-CONTRACT-APPROVED.md). Agency comes from the session only.
 const router = Router();
@@ -87,6 +88,7 @@ router.put('/owner/profile', asyncRoute(async (request, response) => {
     User.findById(scope.userId).select('name emailNormalized').lean(),
   ]);
   if (!agency || !owner) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');
+  await afterReadinessChange(agency._id);
   response.json({ data: profileView(agency, owner) });
 }));
 

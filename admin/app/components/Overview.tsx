@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { WebsiteData } from 'site-template';
 import { apiGet, REVIEW_LABELS, type OwnerSession } from '../lib/api';
+import { websiteStatus } from '../lib/website';
 import { ReviewStatusCard } from './ReviewStatusCard';
 
 type ProfileSummary = { publicContact: { showMobile: boolean; showWhatsapp: boolean }; canEdit: boolean };
@@ -32,8 +33,9 @@ export function Overview({ session, onStatusChange, onSessionEnded }: { session:
       </div>
       <div>
         <p className="status-label">Website</p>
-        <p className="status-value">Not live yet</p>
-        <p className="status-hint">{website?.readiness.ready ? 'Ready — going live comes in the next phase.' : 'Finish the essentials in My Website.'}</p>
+        <p className="status-value">{website ? websiteStatus(website, reviewStatus).label : 'Not live yet'}</p>
+        <p className="status-hint">{website ? websiteStatus(website, reviewStatus).hint : 'Finish the essentials in My Website.'}</p>
+        {website?.publication?.url && <p className="status-hint"><a href={website.publication.url} target="_blank" rel="noopener noreferrer" className="back-link">Open your website</a></p>}
       </div>
       {restrictionStatus === 'DEACTIVATED' && <div>
         <p className="status-label">Account</p>

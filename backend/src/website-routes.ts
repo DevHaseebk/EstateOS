@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requireOwnerWritable, requirePortal, type AuthRequest } from './auth.js';
 import { Agency, WebsiteDraft } from './models.js';
 import { ownerCanEdit, ReviewError } from './review.js';
+import { afterReadinessChange, ownerPublicationView } from './publication.js';
 import { ownerScope, superAdminScope, tenantAgencyFilter } from './tenant.js';
 import { layoutSchema, sectionSchemas, themeSchema } from './validation.js';
 import {
@@ -99,7 +100,7 @@ router.get('/owner/website', asyncRoute(async (request, response) => {
   const context = await currentSession(request);
   const agency = await Agency.findOne(tenantAgencyFilter(ownerScope(context!.user))).lean();
   if (!agency) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');
-  response.json({ data: websiteView(agency, await ensureDraft(agency)) });
+  response.json({ data: { ...websiteView(agency, await ensureDraft(agency)), publication: ownerPublicationView(agency) } });
 }));
 
 router.put('/owner/website/theme', asyncRoute(async (request, response) => {
@@ -112,6 +113,7 @@ router.put('/owner/website/theme', asyncRoute(async (request, response) => {
   );
   if (result.modifiedCount !== 1) throw new ReviewError(409, 'THEME_CONFLICT', 'The theme was changed in another window. Reload to see the latest version.');
   const draft = await WebsiteDraft.findOne({ agencyId: agency._id }).lean();
+  await afterReadinessChange(agency._id);
   response.json({ data: { theme: { preset: draft!.theme?.preset ?? null, version: draft!.theme?.version ?? 0 }, readiness: readinessView(draft!) } });
 }));
 
@@ -135,6 +137,7 @@ router.put('/owner/website/sections/:section', asyncRoute(async (request, respon
   );
   if (result.modifiedCount !== 1) throw new ReviewError(409, 'SECTION_CONFLICT', 'This section was changed in another window. Reload to see the latest version.');
   const updated = await WebsiteDraft.findOne({ agencyId: agency._id }).lean();
+  await afterReadinessChange(agency._id);
   response.json({ data: { section: sectionView(updated!, key), readiness: readinessView(updated!) } });
 }));
 
@@ -156,6 +159,7 @@ router.put('/owner/website/layout', asyncRoute(async (request, response) => {
   );
   if (result.modifiedCount !== 1) throw new ReviewError(409, 'LAYOUT_CONFLICT', 'The layout or a section was changed in another window. Reload to see the latest version.');
   const updated = await WebsiteDraft.findOne({ agencyId: agency._id }).lean();
+  await afterReadinessChange(agency._id);
   response.json({ data: { layout: layoutView(updated!) } });
 }));
 

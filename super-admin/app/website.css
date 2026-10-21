@@ -10,3 +10,4 @@
 .segmented button[aria-pressed="true"] { background: #126d59; color: #fff; }
 .preview-canvas { border: 1px solid #d5ded8; border-radius: 12px; overflow: hidden; background: #fff; }
 .preview-mobile { width: 390px; max-width: 100%; margin: 0 auto; }
+.website-pending { background: #fff4d6; color: #6b4b00; }

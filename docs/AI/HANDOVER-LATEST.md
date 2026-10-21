@@ -1,3 +1,58 @@
+# EstateOS — Phase 4a automatic first Live and public website: implemented and verified by Claude (2026-10-22)
+
+## Current task
+- Contract: `docs/PHASE-4A-FIRST-LIVE-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 8 confirmations.
+- Git: branch `master`, HEAD `5f16abc` (pushed). **All Phase 4a work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-029, D-033, D-048, D-054 (Live part), D-075, D-077, D-081–D-084, D-088–D-092, D-094 (dev hosts), D-102, D-111, D-115, D-119.
+
+## Work completed
+- **Backend**
+  - `models.ts`:
+    - `publicationStatus` is now NEVER_PUBLISHED / ACTIVATION_PENDING / LIVE, with `publication` {slug (unique partial index), liveRevisionId, firstLiveAt, lastActivationError, activationAttempts};
+    - append-only `PublishedRevision` (site snapshot, unique `(agencyId, revision)`);
+    - the audit allows `actorRole: SYSTEM`, `axis: PUBLICATION` and `WEBSITE_FIRST_LIVE`.
+  - `publication.ts`:
+    - slug rules (`slugBase`, `slugCandidate`, reserved words);
+    - `tryFirstActivation`: one transaction doing the slug, revision 1, the conditional pointer update and the audit; it retries a slug collision and on any other error sets ACTIVATION_PENDING with an error code;
+    - `afterReadinessChange`, `reconcileActivations`, `startReconciler` (every 5 minutes, `unref`), and the views.
+  - Triggers: Approve, Restore, Profile PUT, and the theme, section and layout PUTs (after commit; they never fail the request).
+  - `public-routes.ts`: `publicGuard` (`x-public-api-key`; must differ from the internal key) and `GET /api/v1/public/sites/:slug`, which gives one identical 404 `NOT_AVAILABLE`. Mounted before `apiGuard`.
+  - `config/env.ts`: `PUBLIC_API_KEY`, `PUBLIC_SITE_DOMAIN`. New CLI `npm run reconcile:activations -w backend`. The server starts the reconciler.
+  - The owner website GET includes `publication`. The Super Admin directory adds `publicUrl`; the detail adds `publication` (with the error).
+- **frontend/**
+  - `lib/tenant.ts` (host → slug) and `lib/public-api.ts` (server-side fetch with the public key, `no-store`);
+  - `page.tsx` (server-renders the Live revision, falling back to the platform placeholder) and `not-found.tsx`;
+  - template fonts and CSS; `transpilePackages`; dev server bound to 127.0.0.1.
+- **site-template**: `SiteContent` type (renders a draft or a frozen revision); `WebsiteData.publication`.
+- **Agency Admin**: one `websiteStatus` helper used by the hub and Overview (Not live / Going live / Live with "Open your website"; after Live, a note that edits stay private until 4b).
+- **Super Admin**: website label (Not ready / Ready / Going live / Live), "Open site" link, the activation error, and the system actor in the history.
+- **Dev**: the Caddyfile wildcard `*.sites.estateos.localhost` → 4000; the public key is generated into the gitignored `backend/.env` and `frontend/.env.local`; `docs/LOCAL-DEV-SETUP.md` is updated.
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (5 workspaces) → exit 0.
+- `npm test -w backend` → **89/89** (new `publication.test.ts`, 10 tests; `frontend-public.test.ts`, 3 tests).
+  - The bootstrap test now spawns the CLI asynchronously; it hit the same mongod pipe stall as before.
+  - The 3b test was updated: approved + ready now goes LIVE.
+- HTTPS end-to-end check with a **new synthetic agency** (`6ad91009481f3343c38f29d7`, slug `e2e-synthetic-homes-1792610312`), with the backend temporarily on the test photo fixture and then restarted normally:
+  - not live before Approve; LIVE right after Approve;
+  - the public page shows the name, Live heading, dark theme and WhatsApp link; no cookies; no key in the page;
+  - a private edit after Live does not leak;
+  - Block → 404; Restore → 200; unknown host → 404;
+  - the history shows WEBSITE_FIRST_LIVE.
+  - That agency stays Live in the dev DB, as approved.
+- Not verified: a visual click-through in a browser.
+
+## Handoff
+- **Owner action still open:** licensed Hero photos. Without them no real agency can go Live.
+- Next: Phase 4b Publish Updates (D-053, D-054, D-079, D-087, D-107), 3d uploads, or 5 Properties. Each needs a contract.
+- Preserve:
+  - first Live is only ever automatic (never an owner button);
+  - revisions are append-only;
+  - the public portal is read-only with its own key;
+  - one identical 404 for all non-public cases.
+
+---
+
 # EstateOS — Phase 3c optional website sections: implemented and verified by Claude (2026-10-22)
 
 ## Current task

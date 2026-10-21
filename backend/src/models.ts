@@ -4,6 +4,17 @@ export const REVIEW_STATUSES = ['PENDING', 'CHANGES_REQUESTED', 'APPROVED', 'REJ
 export const REVIEW_ACTIONS = ['APPROVE', 'REQUEST_CHANGES', 'REJECT', 'RESUBMIT', 'REOPEN'] as const;
 export const RESTRICTION_STATUSES = ['NONE', 'BLOCKED', 'DEACTIVATED'] as const;
 export const RESTRICTION_ACTIONS = ['BLOCK', 'DEACTIVATE', 'RESTORE'] as const;
+// Phase 4a (D-102, D-119): ACTIVATION_PENDING only after a failed automatic first activation.
+export const PUBLICATION_STATUSES = ['NEVER_PUBLISHED', 'ACTIVATION_PENDING', 'LIVE'] as const;
+
+// Phase 4a (D-082, D-090, D-119): stable slug, the single authoritative Live pointer, and private activation errors.
+const publicationSchema = new Schema({
+  slug: { type: String },
+  liveRevisionId: { type: Schema.Types.ObjectId, ref: 'PublishedRevision' },
+  firstLiveAt: { type: Date },
+  lastActivationError: { type: new Schema({ code: { type: String, required: true }, at: { type: Date, required: true } }, { _id: false }) },
+  activationAttempts: { type: Number, default: 0 },
+}, { _id: false });
 
 const latestReviewSchema = new Schema({
   action: { type: String, enum: REVIEW_ACTIONS, required: true },
@@ -46,7 +57,8 @@ const agencySchema = new Schema({
   restrictionStatus: { type: String, enum: RESTRICTION_STATUSES, required: true, default: 'NONE' },
   restrictionVersion: { type: Number, required: true, default: 0 },
   latestRestriction: { type: latestRestrictionSchema, default: undefined },
-  publicationStatus: { type: String, enum: ['NEVER_PUBLISHED'], required: true, default: 'NEVER_PUBLISHED' },
+  publicationStatus: { type: String, enum: PUBLICATION_STATUSES, required: true, default: 'NEVER_PUBLISHED' },
+  publication: { type: publicationSchema, default: undefined },
   publicContact: { type: publicContactSchema, required: true, default: () => ({}) },
   profile: { type: agencyProfileSchema, default: undefined },
   profileVersion: { type: Number, required: true, default: 0 },
@@ -57,6 +69,9 @@ agencySchema.index({ reviewStatus: 1, submittedForReviewAt: 1, _id: 1 });
 agencySchema.index({ createdAt: -1, _id: -1 });
 agencySchema.index({ reviewStatus: 1, createdAt: -1 });
 agencySchema.index({ restrictionStatus: 1, createdAt: -1 });
+agencySchema.index({ 'publication.slug': 1 }, { unique: true, partialFilterExpression: { 'publication.slug': { $type: 'string' } } });
+// Reconciler scan (Phase 4a §3): approved, unrestricted, not yet Live.
+agencySchema.index({ reviewStatus: 1, restrictionStatus: 1, publicationStatus: 1 });
 
 const userSchema = new Schema({
   role: { type: String, enum: ['AGENCY_OWNER', 'SUPER_ADMIN'], required: true },
@@ -106,15 +121,16 @@ const auditSchema = new Schema({
 const agencyAuditSchema = new Schema({
   at: { type: Date, required: true, default: Date.now, immutable: true },
   agencyId: { type: Schema.Types.ObjectId, ref: 'Agency', required: true, immutable: true },
-  actorUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true, immutable: true },
-  actorRole: { type: String, enum: ['SUPER_ADMIN', 'AGENCY_OWNER'], required: true, immutable: true },
-  axis: { type: String, enum: ['REVIEW', 'RESTRICTION'], required: true, default: 'REVIEW', immutable: true },
+  // SYSTEM entries (automatic first Live, Phase 4a) have no acting user.
+  actorUserId: { type: Schema.Types.ObjectId, ref: 'User', immutable: true, required(this: { actorRole?: string }) { return this.actorRole !== 'SYSTEM'; } },
+  actorRole: { type: String, enum: ['SUPER_ADMIN', 'AGENCY_OWNER', 'SYSTEM'], required: true, immutable: true },
+  axis: { type: String, enum: ['REVIEW', 'RESTRICTION', 'PUBLICATION'], required: true, default: 'REVIEW', immutable: true },
   action: {
     type: String, required: true, immutable: true,
-    enum: ['REVIEW_APPROVE', 'REVIEW_REQUEST_CHANGES', 'REVIEW_REJECT', 'REVIEW_REOPEN', 'OWNER_RESUBMIT', 'RESTRICT_BLOCK', 'RESTRICT_DEACTIVATE', 'RESTRICT_RESTORE'],
+    enum: ['REVIEW_APPROVE', 'REVIEW_REQUEST_CHANGES', 'REVIEW_REJECT', 'REVIEW_REOPEN', 'OWNER_RESUBMIT', 'RESTRICT_BLOCK', 'RESTRICT_DEACTIVATE', 'RESTRICT_RESTORE', 'WEBSITE_FIRST_LIVE'],
   },
-  fromStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES], required: true, immutable: true },
-  toStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES], required: true, immutable: true },
+  fromStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES, ...PUBLICATION_STATUSES], required: true, immutable: true },
+  toStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES, ...PUBLICATION_STATUSES], required: true, immutable: true },
   reason: { type: String, immutable: true },
   requestId: { type: String, immutable: true },
 }, { versionKey: false });
@@ -226,7 +242,22 @@ const websiteDraftSchema = new Schema({
   mapped: { type: draftMappedSchema, required: true },
 }, { timestamps: true });
 
+// D-090: immutable published website material. Append-only: nothing updates or deletes a revision.
+const publishedRevisionSchema = new Schema({
+  agencyId: { type: Schema.Types.ObjectId, ref: 'Agency', required: true, immutable: true },
+  revision: { type: Number, required: true, immutable: true },
+  slug: { type: String, required: true, immutable: true },
+  site: { type: Schema.Types.Mixed, required: true, immutable: true },
+  reason: { type: String, enum: ['FIRST_ACTIVATION'], required: true, immutable: true },
+  createdAt: { type: Date, required: true, default: Date.now, immutable: true },
+}, { versionKey: false, minimize: false });
+publishedRevisionSchema.index({ agencyId: 1, revision: 1 }, { unique: true });
+for (const operation of ['updateOne', 'updateMany', 'findOneAndUpdate', 'replaceOne', 'findOneAndReplace', 'deleteOne', 'deleteMany', 'findOneAndDelete'] as const) {
+  publishedRevisionSchema.pre(operation, () => { throw new Error('REVISION_APPEND_ONLY'); });
+}
+
 export const Agency = mongoose.model('Agency', agencySchema);
+export const PublishedRevision = mongoose.model('PublishedRevision', publishedRevisionSchema);
 export const WebsiteDraft = mongoose.model('WebsiteDraft', websiteDraftSchema);
 export const AgencyAudit = mongoose.model('AgencyAudit', agencyAuditSchema);
 export const User = mongoose.model('User', userSchema);

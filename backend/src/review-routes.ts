@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requireOwnerWritable, requirePortal, type AuthRequest } from './auth.js';
 import { Agency, AgencyAudit, REVIEW_STATUSES, User, WebsiteDraft } from './models.js';
 import { profileDetails, publicContactView } from './profile-routes.js';
+import { adminPublicationView, afterReadinessChange, publicUrl } from './publication.js';
 import { applyRestrictionTransition, restrictionView } from './restriction.js';
 import { getReadinessIssues, licensedHeroDefaults, virtualDraft } from './website.js';
 import { applyReviewTransition, ownerReviewView, reviewView } from './review.js';
@@ -101,6 +102,7 @@ router.get('/super-admin/agencies', asyncRoute(async (request, response) => {
         createdAt: agency.createdAt, reviewStatus: agency.reviewStatus, restrictionStatus: agency.restrictionStatus ?? 'NONE',
         websiteReadiness: getReadinessIssues(draftByAgency.get(String(agency._id)) ?? virtualDraft(agency), licensedIds).length ? 'NOT_READY' : 'READY',
         publicationStatus: agency.publicationStatus ?? 'NEVER_PUBLISHED',
+        ...(agency.publicationStatus === 'LIVE' && agency.publication?.slug ? { publicUrl: publicUrl(agency.publication.slug) } : {}),
       };
     }),
     nextCursor: found.length > limit && last ? encodeCursor(last.createdAt, last._id) : null,
@@ -128,6 +130,7 @@ router.get('/super-admin/agencies/:agencyId', asyncRoute(async (request, respons
     websiteReadiness: readinessIssues.length ? 'NOT_READY' : 'READY',
     readinessIssues,
     publicationStatus: agency.publicationStatus ?? 'NEVER_PUBLISHED',
+    publication: adminPublicationView(agency),
     history: history.map((entry) => ({
       at: entry.at, axis: entry.axis ?? 'REVIEW', action: entry.action, actorRole: entry.actorRole, fromStatus: entry.fromStatus, toStatus: entry.toStatus,
       ...(entry.reason ? { reason: entry.reason } : {}),
@@ -143,6 +146,8 @@ router.post('/super-admin/agencies/:agencyId/review-decisions', asyncRoute(async
     agencyId, action: input.decision, actorUserId: scope.userId, actorRole: 'SUPER_ADMIN',
     expectedReviewVersion: input.expectedReviewVersion, reason: 'reason' in input ? input.reason : undefined, requestId: randomUUID(),
   });
+  // Phase 4a §1 Q4: Approve may complete the first-Live conditions (D-077).
+  if (input.decision === 'APPROVE') await afterReadinessChange(agencyId);
   response.json({ data: { review: reviewView(agency) } });
 }));
 
@@ -165,6 +170,8 @@ router.post('/super-admin/agencies/:agencyId/restrictions', asyncRoute(async (re
     agencyId, action: input.action, actorUserId: scope.userId,
     expectedRestrictionVersion: input.expectedRestrictionVersion, reason: input.reason, requestId: randomUUID(),
   });
+  // D-083: Restore re-checks eligibility; it never simply shows the site again.
+  if (input.action === 'RESTORE') await afterReadinessChange(agencyId);
   response.json({ data: { restriction: restrictionView(agency) } });
 }));
 

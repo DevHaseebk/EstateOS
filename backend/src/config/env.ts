@@ -16,4 +16,7 @@ export const env = {
   superOrigin,
   internalApiKey: process.env.INTERNAL_API_KEY,
   csrfSigningKey: process.env.CSRF_SIGNING_KEY,
+  // Phase 4a: read-only key for the public frontend (never the management key) and the public site domain.
+  publicApiKey: process.env.PUBLIC_API_KEY,
+  publicSiteDomain: process.env.PUBLIC_SITE_DOMAIN ?? 'sites.estateos.localhost',
 };

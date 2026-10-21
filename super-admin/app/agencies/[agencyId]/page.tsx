@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { AdminHeader } from '../../components/AdminHeader';
 import { DecisionDialog, type DecisionKind } from '../../components/DecisionDialog';
-import { ACTION_LABELS, ApiError, apiGet, apiMutation, formatDate, RESTRICTION_LABELS, REVIEW_LABELS, statusLabel } from '../../lib/api';
+import { ACTION_LABELS, ApiError, apiGet, apiMutation, formatDate, RESTRICTION_LABELS, REVIEW_LABELS, statusLabel, websiteLabel } from '../../lib/api';
 
 type Detail = {
   id: string;
@@ -20,6 +20,7 @@ type Detail = {
   websiteReadiness: string;
   readinessIssues: { key: string; message: string }[];
   publicationStatus: string;
+  publication: { status: string; url?: string; firstLiveAt?: string; lastActivationError?: { code: string; at: string }; activationAttempts: number };
   history: { at: string; axis: string; action: string; actorRole: string; fromStatus: string; toStatus: string; reason?: string }[];
 };
 type Session = { user: { name: string } };
@@ -112,9 +113,15 @@ export default function AgencyReviewPage() {
           <div className="badges">
             <span className={`badge review-${status.toLowerCase()}`}>Review: {REVIEW_LABELS[status] ?? status}</span>
             {restricted && <span className={`badge account-${restriction.status.toLowerCase()}`}>Account: {RESTRICTION_LABELS[restriction.status]}</span>}
-            <span className={`badge ${detail.websiteReadiness === 'READY' ? 'website-ready' : 'neutral'}`}>Website: {detail.websiteReadiness === 'READY' ? 'ready (not live yet)' : 'not ready'}</span>
+            {(() => { const label = websiteLabel(detail.publicationStatus, detail.websiteReadiness); return <span className={`badge ${label.tone}`}>Website: {label.text}</span>; })()}
           </div>
-          {detail.readinessIssues.length > 0 && <div className="latest-reason">
+          {detail.publication.url && <p>Public website: <a href={detail.publication.url} target="_blank" rel="noopener noreferrer" className="back-link">{detail.publication.url.replace('https://', '')}</a>
+            {detail.publication.firstLiveAt && <span className="queue-meta"> · Live since {formatDate(detail.publication.firstLiveAt)}</span>}</p>}
+          {detail.publication.lastActivationError && detail.publication.status !== 'LIVE' && <div className="latest-reason">
+            <p className="eyebrow">Automatic go-live failed — retrying</p>
+            <p>Error {detail.publication.lastActivationError.code} at {formatDate(detail.publication.lastActivationError.at)} · attempts: {detail.publication.activationAttempts}</p>
+          </div>}
+          {detail.publicationStatus !== 'LIVE' && detail.readinessIssues.length > 0 && <div className="latest-reason">
             <p className="eyebrow">Website essentials still missing</p>
             <ul className="readiness-list">{detail.readinessIssues.map((issue) => <li key={issue.key}>{issue.message}</li>)}</ul>
           </div>}
@@ -165,8 +172,8 @@ export default function AgencyReviewPage() {
         <h2 id="history-title">History</h2>
         {detail.history.length === 0 ? <p>No review actions yet.</p> : <ol className="history">
           {detail.history.map((entry, index) => <li key={`${entry.at}-${index}`}>
-            <p><strong>{ACTION_LABELS[entry.action] ?? entry.action}</strong> · {formatDate(entry.at)} · by {entry.actorRole === 'SUPER_ADMIN' ? 'Super Admin' : 'Agency owner'}</p>
-            <p className="queue-meta">{entry.axis === 'RESTRICTION' ? 'Account: ' : ''}{statusLabel(entry.fromStatus)} → {statusLabel(entry.toStatus)}</p>
+            <p><strong>{ACTION_LABELS[entry.action] ?? entry.action}</strong> · {formatDate(entry.at)} · by {entry.actorRole === 'SUPER_ADMIN' ? 'Super Admin' : entry.actorRole === 'SYSTEM' ? 'EstateOS (automatic)' : 'Agency owner'}</p>
+            <p className="queue-meta">{entry.axis === 'RESTRICTION' ? 'Account: ' : entry.axis === 'PUBLICATION' ? 'Website: ' : ''}{statusLabel(entry.fromStatus)} → {statusLabel(entry.toStatus)}</p>
             {entry.reason && <p className="history-reason">{entry.reason}</p>}
           </li>)}
         </ol>}

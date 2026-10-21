@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState, type FormEvent } from 'react';
 import { AdminHeader } from '../components/AdminHeader';
-import { ApiError, apiGet, formatDate, RESTRICTION_LABELS, REVIEW_LABELS } from '../lib/api';
+import { ApiError, apiGet, formatDate, RESTRICTION_LABELS, REVIEW_LABELS, websiteLabel } from '../lib/api';
 
 type DirectoryItem = {
   id: string; agencyName: string; ownerName: string | null; ownerEmail: string | null; createdAt: string;
-  reviewStatus: string; restrictionStatus: string; websiteReadiness: string;
+  reviewStatus: string; restrictionStatus: string; websiteReadiness: string; publicationStatus?: string; publicUrl?: string;
 };
 type Directory = { items: DirectoryItem[]; nextCursor: string | null };
 type Session = { user: { name: string } };
@@ -110,7 +110,8 @@ function AgencyDirectory() {
             <div className="badges">
               <span className={`badge small review-${item.reviewStatus.toLowerCase()}`}>Review: {REVIEW_LABELS[item.reviewStatus] ?? item.reviewStatus}</span>
               {item.restrictionStatus !== 'NONE' && <span className={`badge small account-${item.restrictionStatus.toLowerCase()}`}>Account: {RESTRICTION_LABELS[item.restrictionStatus]}</span>}
-              <span className={`badge small ${item.websiteReadiness === 'READY' ? 'website-ready' : 'neutral'}`}>Website: {item.websiteReadiness === 'READY' ? 'ready (not live)' : 'not ready'}</span>
+              {(() => { const label = websiteLabel(item.publicationStatus, item.websiteReadiness); return <span className={`badge small ${label.tone}`}>Website: {label.text}</span>; })()}
+              {item.publicUrl && <a className="badge small neutral" href={item.publicUrl} target="_blank" rel="noopener noreferrer">Open site<span className="visually-hidden"> of {item.agencyName}</span></a>}
             </div>
           </div>
           <Link className="review-link" href={`/agencies/${item.id}`}>View / Manage<span className="visually-hidden"> {item.agencyName}</span></Link>

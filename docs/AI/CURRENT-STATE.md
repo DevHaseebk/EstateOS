@@ -61,6 +61,14 @@ The Phase 3c contract is **APPROVED** (2026-10-21) and **implemented and verifie
 - Built: About, Services, Why Choose Us and Team (all hidden until they have content); a separate Layout save for show/hide and order; card editors; 12 icons; consent required for team numbers.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 76/76; server-render checks pass; the HTTPS end-to-end check passed.
 
+## Phase 4a status (2026-10-22)
+
+Phase 4 is split: 4a automatic first Live and public site; 4b Publish Updates. The Phase 4a contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-4A-FIRST-LIVE-CONTRACT-APPROVED.md`.
+
+- Built: idempotent first activation (triggers plus a 5-minute reconciler and CLI); slug fixed at first Live; append-only `PublishedRevision`; the PUBLIC portal and key; `frontend/` serves `<slug>.sites.estateos.localhost`; one identical 404 for unknown, Not Live, Blocked and Deactivated sites; truthful status and links in both portals.
+- Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 89/89; the HTTPS end-to-end check passed.
+- One synthetic agency (`e2e-synthetic-homes-1792610312`) is Live in the dev DB, as approved.
+
 ## Next gate (written before Phase 1; kept for history)
 
 Review actual repo/active Git diff; reconcile AI setup; document Phase 1 exact server session/CSRF/dev host, agency/user/session bootstrap/recovery, tenant-scoping and versioned auth API contracts with tests. Obtain explicit owner approval **before auth/tenant business code**. Suggested prompt: `docs/AI/PHASE-1-AUTH-TENANT-CODEX-PROMPT.md`.
