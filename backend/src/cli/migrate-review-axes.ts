@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { env } from '../config/env.js';
 import { Agency, AgencyAudit } from '../models.js';
 
-// Phase 2a contract §3 and Phase 2b §5: backfill review/restriction/publication fields and the audit axis. Idempotent.
+// Phase 2a contract §3, Phase 2b §5 and Phase 3a §4: backfill review/restriction/publication fields and the audit axis. Idempotent.
 // The audit backfill uses the native driver on purpose; application code never updates audit entries.
 async function main(): Promise<void> {
   if (!env.mongoUri) throw new Error('MONGODB_URI is required');
@@ -16,6 +16,8 @@ async function main(): Promise<void> {
       agencies.updateMany({ restrictionStatus: { $exists: false } }, { $set: { restrictionStatus: 'NONE' } }),
       agencies.updateMany({ publicationStatus: { $exists: false } }, { $set: { publicationStatus: 'NEVER_PUBLISHED' } }),
       agencies.updateMany({ restrictionVersion: { $exists: false } }, { $set: { restrictionVersion: 0 } }),
+      agencies.updateMany({ profileVersion: { $exists: false } }, { $set: { profileVersion: 0 } }),
+      agencies.updateMany({ publicContact: { $exists: false } }, { $set: { publicContact: { showMobile: false, showWhatsapp: false } } }),
       AgencyAudit.collection.updateMany({ axis: { $exists: false } }, { $set: { axis: 'REVIEW' } }),
     ]);
     const updated = results.reduce((total, result) => total + result.modifiedCount, 0);

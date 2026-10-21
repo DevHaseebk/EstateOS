@@ -19,6 +19,21 @@ const latestRestrictionSchema = new Schema({
   actorUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 }, { _id: false });
 
+// Phase 3a: optional Agency Profile details; empty values are stored as absent.
+const agencyProfileSchema = new Schema({
+  description: { type: String },
+  officeAddress: { type: String },
+  city: { type: String },
+  serviceAreas: { type: String },
+  publicEmail: { type: String },
+}, { _id: false });
+
+// D-099: nothing is public until the owner chooses it.
+const publicContactSchema = new Schema({
+  showMobile: { type: Boolean, required: true, default: false },
+  showWhatsapp: { type: Boolean, required: true, default: false },
+}, { _id: false });
+
 // D-102: review, restriction and publication are separate axes; readiness is computed later (Phase 3).
 const agencySchema = new Schema({
   name: { type: String, required: true },
@@ -32,6 +47,10 @@ const agencySchema = new Schema({
   restrictionVersion: { type: Number, required: true, default: 0 },
   latestRestriction: { type: latestRestrictionSchema, default: undefined },
   publicationStatus: { type: String, enum: ['NEVER_PUBLISHED'], required: true, default: 'NEVER_PUBLISHED' },
+  publicContact: { type: publicContactSchema, required: true, default: () => ({}) },
+  profile: { type: agencyProfileSchema, default: undefined },
+  profileVersion: { type: Number, required: true, default: 0 },
+  profileUpdatedAt: { type: Date },
 }, { timestamps: true });
 agencySchema.index({ reviewStatus: 1, submittedForReviewAt: 1, _id: 1 });
 // Phase 2b directory: newest first, optionally filtered by one axis.

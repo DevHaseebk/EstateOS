@@ -13,7 +13,7 @@ function messageFrom(payload: ErrorPayload, fallback: string): string {
 
 // D-067/D-068/D-073: truthful review status, the latest reason, and Resubmit only after Request Changes.
 // Phase 2b: a Deactivated agency is read-only; a Blocked agency loses its session (onSessionEnded).
-export function ReviewStatusCard({ agencyId, onSessionEnded }: { agencyId: string; onSessionEnded: () => void }) {
+export function ReviewStatusCard({ agencyId, onSessionEnded, onStatusChange }: { agencyId: string; onSessionEnded: () => void; onStatusChange?: () => void }) {
   const [agency, setAgency] = useState<AgencyReview | null>(null);
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
@@ -49,6 +49,7 @@ export function ReviewStatusCard({ agencyId, onSessionEnded }: { agencyId: strin
       if (!response.ok) throw new Error(messageFrom(payload, 'Could not resubmit'));
       setNotice('Resubmitted. Your agency is waiting for review again.');
       await load();
+      onStatusChange?.();
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not resubmit'); }
     finally { setBusy(false); setConfirming(false); }
   }

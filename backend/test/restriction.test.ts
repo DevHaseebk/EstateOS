@@ -352,7 +352,8 @@ test('migration backfills restrictionVersion and the audit axis, and stays idemp
   });
   const first = await run();
   assert.equal(first.status, 0, first.stderr);
-  assert.match(first.stdout, / 2 field update/);
+  // restrictionVersion + audit axis (2b), plus profileVersion + publicContact (3a).
+  assert.match(first.stdout, / 4 field update/);
   assert.equal((await legacyDb.collection('agencies').findOne({ _id: insertedId }))?.restrictionVersion, 0);
   assert.equal((await legacyDb.collection('agencyaudits').findOne({ agencyId: insertedId }))?.axis, 'REVIEW');
   const second = await run();

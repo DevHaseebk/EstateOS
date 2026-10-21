@@ -118,3 +118,36 @@ test('Phase 2b directory and restriction routes are Super Admin only', async () 
     assert.equal(forwarded.length, forwardedCount);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Phase 3a profile routes: GET and PUT on the owner portal only', async () => {
+  const originalFetch = globalThis.fetch;
+  const forwarded: { url: string; method?: string; body?: unknown }[] = [];
+  globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => { forwarded.push({ url: String(input), method: init?.method, body: init?.body }); return Response.json({ data: {} }); };
+  const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
+  try {
+    const read = await owner.GET(new NextRequest('https://admin.estateos.localhost/api/v1/owner/profile'), ctx(['owner', 'profile']));
+    assert.equal(read.status, 200);
+    const save = await owner.PUT(new NextRequest('https://admin.estateos.localhost/api/v1/owner/profile', {
+      method: 'PUT', headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'application/json' }, body: '{"expectedProfileVersion":0}',
+    }), ctx(['owner', 'profile']));
+    assert.equal(save.status, 200);
+    assert.equal(forwarded.at(-1)?.method, 'PUT');
+    assert.equal(forwarded.at(-1)?.body, '{"expectedProfileVersion":0}');
+    const forwardedCount = forwarded.length;
+    const foreign = await owner.PUT(new NextRequest('https://admin.estateos.localhost/api/v1/owner/profile', {
+      method: 'PUT', headers: { origin: 'https://attacker.example', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['owner', 'profile']));
+    assert.equal(foreign.status, 403);
+    const otherPut = await owner.PUT(new NextRequest('https://admin.estateos.localhost/api/v1/owner/session', {
+      method: 'PUT', headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['owner', 'session']));
+    assert.equal(otherPut.status, 404);
+    const postProfile = await owner.POST(new NextRequest('https://admin.estateos.localhost/api/v1/owner/profile', {
+      method: 'POST', headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['owner', 'profile']));
+    assert.equal(postProfile.status, 404);
+    const superProfile = await superAdmin.GET(new NextRequest('https://control.estateos.localhost/api/v1/owner/profile'), ctx(['owner', 'profile']));
+    assert.equal(superProfile.status, 404);
+    assert.equal(forwarded.length, forwardedCount);
+  } finally { globalThis.fetch = originalFetch; }
+});

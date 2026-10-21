@@ -35,9 +35,12 @@ type AgencyReviewFields = {
   latestReview?: { action: string; reason?: string | null; decidedAt: Date; actorUserId?: Types.ObjectId } | null;
 };
 
-/** Owner may edit agency data only while Pending or Changes Requested and unrestricted (owner answer 4). */
+/**
+ * Owner may edit agency data while Pending, Changes Requested or Approved and unrestricted
+ * (Phase 2a owner answer 4, amended by Phase 3a §3). Rejected stays view-only.
+ */
 export function ownerCanEdit(agency: AgencyReviewFields): boolean {
-  return (agency.reviewStatus === 'PENDING' || agency.reviewStatus === 'CHANGES_REQUESTED') && (agency.restrictionStatus ?? 'NONE') === 'NONE';
+  return ['PENDING', 'CHANGES_REQUESTED', 'APPROVED'].includes(agency.reviewStatus) && (agency.restrictionStatus ?? 'NONE') === 'NONE';
 }
 
 function latestReviewView(agency: AgencyReviewFields) {

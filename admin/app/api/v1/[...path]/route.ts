@@ -8,7 +8,9 @@ const PREAUTH = '__Host-estateos_preauth_owner';
 async function handle(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
   const route = `/api/v1/${path.join('/')}`;
-  const allowed = (request.method === 'GET' && (route === '/api/v1/auth/csrf' || route === '/api/v1/owner/session' || /^\/api\/v1\/owner\/agencies\/[a-f0-9]{24}$/i.test(route))) ||
+  const allowed = (request.method === 'GET' && (['/api/v1/auth/csrf', '/api/v1/owner/session', '/api/v1/owner/profile'].includes(route) ||
+      /^\/api\/v1\/owner\/agencies\/[a-f0-9]{24}$/i.test(route))) ||
+    (request.method === 'PUT' && route === '/api/v1/owner/profile') ||
     (request.method === 'POST' && ['/api/v1/owner/registrations', '/api/v1/owner/sessions', '/api/v1/auth/recovery/complete', '/api/v1/owner/review-resubmissions'].includes(route)) ||
     (request.method === 'DELETE' && route === '/api/v1/owner/session');
   if (!allowed) return NextResponse.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, { status: 404 });
@@ -67,3 +69,4 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
 export const GET = handle;
 export const POST = handle;
 export const DELETE = handle;
+export const PUT = handle;

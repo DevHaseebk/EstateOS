@@ -12,6 +12,8 @@ type Detail = {
   agencyName: string;
   owner: { name: string | null; email: string | null; mobile: string; whatsapp: string };
   createdAt: string;
+  profile: { description?: string; officeAddress?: string; city?: string; serviceAreas?: string; publicEmail?: string };
+  publicContact: { showMobile: boolean; showWhatsapp: boolean };
   review: { status: string; version: number; latestReview: { action: string; reason?: string; decidedAt: string } | null; submittedForReviewAt: string };
   restrictionStatus: string;
   restriction: { status: string; version: number; latestRestriction: { action: string; reason: string; decidedAt: string } | null };
@@ -99,7 +101,13 @@ export default function AgencyReviewPage() {
             <div><dt>WhatsApp</dt><dd>{detail.owner.whatsapp}</dd></div>
             <div><dt>Registered</dt><dd>{formatDate(detail.createdAt)}</dd></div>
             <div><dt>In queue since</dt><dd>{formatDate(detail.review.submittedForReviewAt)}</dd></div>
+            <div><dt>Shown on website</dt><dd>{[detail.publicContact.showMobile && 'Mobile', detail.publicContact.showWhatsapp && 'WhatsApp'].filter(Boolean).join(', ') || 'None chosen yet'}</dd></div>
+            <div><dt>City</dt><dd>{detail.profile.city ?? '—'}</dd></div>
+            <div><dt>Office address</dt><dd>{detail.profile.officeAddress ?? '—'}</dd></div>
+            <div><dt>Areas served</dt><dd>{detail.profile.serviceAreas ?? '—'}</dd></div>
+            <div><dt>Public email</dt><dd>{detail.profile.publicEmail ?? '—'}</dd></div>
           </dl>
+          {detail.profile.description && <div className="latest-reason"><p className="eyebrow">Agency description</p><p>{detail.profile.description}</p></div>}
           <div className="badges">
             <span className={`badge review-${status.toLowerCase()}`}>Review: {REVIEW_LABELS[status] ?? status}</span>
             {restricted && <span className={`badge account-${restriction.status.toLowerCase()}`}>Account: {RESTRICTION_LABELS[restriction.status]}</span>}

@@ -12,6 +12,7 @@ The owner accepted Claude's recommended answers to four open questions:
 2. **After Approve:** no further review decisions. An Approved agency can only be restricted (Block/Deactivate, Phase 2b).
 3. **Reasons:** required for Request Changes, Reject and Reopen; 10–1000 characters after trimming; shown in full to the agency owner.
 4. **Owner editing rights:** owner may edit agency data while **Pending** or **Changes Requested**; **Rejected** is view-only. (Phase 2a adds no editable owner screens; this rule is implemented as a shared check that Phase 3 will use.)
+   *Amended 2026-10-21 by the approved Phase 3a contract: Approved agencies may also edit their profile; Rejected stays view-only.*
 
 ## 1. Scope
 

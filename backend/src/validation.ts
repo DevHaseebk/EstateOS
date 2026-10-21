@@ -50,3 +50,25 @@ export const directoryQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: z.string().max(200).optional(),
 });
+
+// Phase 3a Agency Profile contract §4–§5: the whole form is saved at once.
+const optionalText = (max: number) => z.string().trim().max(max, `Must be at most ${max} characters`).optional()
+  .transform((value) => value ? value : undefined);
+const optionalEmail = z.string().trim().max(254).optional()
+  .refine((value) => !value || z.email().safeParse(value).success, 'Enter a valid email address')
+  .transform((value) => value ? value.toLowerCase() : undefined);
+export const profileSchema = z.strictObject({
+  agencyName: name(120),
+  ownerName: name(100),
+  mobile: phone,
+  whatsapp: phone,
+  publicContact: z.strictObject({ showMobile: z.boolean(), showWhatsapp: z.boolean() }),
+  profile: z.strictObject({
+    description: optionalText(600),
+    officeAddress: optionalText(200),
+    city: optionalText(80),
+    serviceAreas: optionalText(200),
+    publicEmail: optionalEmail,
+  }),
+  expectedProfileVersion: z.number().int().min(0),
+});

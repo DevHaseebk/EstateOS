@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requireOwnerWritable, requirePortal, type AuthRequest } from './auth.js';
 import { Agency, AgencyAudit, REVIEW_STATUSES, User } from './models.js';
+import { profileDetails, publicContactView } from './profile-routes.js';
 import { applyRestrictionTransition, restrictionView } from './restriction.js';
 import { applyReviewTransition, ownerReviewView, reviewView } from './review.js';
 import { ownerScope, superAdminScope } from './tenant.js';
@@ -113,6 +114,8 @@ router.get('/super-admin/agencies/:agencyId', asyncRoute(async (request, respons
     agencyName: agency.name,
     owner: { name: owner?.name ?? null, email: owner?.emailNormalized ?? null, mobile: agency.mobileE164, whatsapp: agency.whatsappE164 },
     createdAt: agency.createdAt,
+    profile: profileDetails(agency),
+    publicContact: publicContactView(agency),
     review: { ...reviewView(agency), submittedForReviewAt: agency.submittedForReviewAt },
     restrictionStatus: agency.restrictionStatus ?? 'NONE',
     restriction: restrictionView(agency),

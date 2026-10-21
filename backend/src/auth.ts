@@ -130,7 +130,7 @@ export function requireOwnerWritable(request: AuthRequest): void {
 function ownerData(user: InstanceType<typeof User>, agency: InstanceType<typeof Agency>) {
   return {
     user: { id: user.id, name: user.name, role: user.role },
-    agency: { id: agency.id, reviewStatus: agency.reviewStatus, restrictionStatus: agency.restrictionStatus ?? 'NONE' },
+    agency: { id: agency.id, name: agency.name, reviewStatus: agency.reviewStatus, restrictionStatus: agency.restrictionStatus ?? 'NONE' },
   };
 }
 

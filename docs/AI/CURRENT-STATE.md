@@ -39,6 +39,12 @@ Phase 2b contract is **APPROVED** (2026-10-21) and **implemented and verified by
 - Checks: typecheck, lint and build pass for all 4 workspaces; `npm test -w backend` passes 40/40; the migration ran on Atlas dev; the HTTPS end-to-end check passed.
 - Font fix (Inter for both portals) committed `18e9c6f`.
 
+## Phase 3a status (2026-10-21)
+
+Phase 3 is split: 3a Agency Admin shell and Agency Profile; 3b My Website, theme, editor, images, readiness and preview; 4 first Live and public site; 5 Properties. The Phase 3a contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-3A-AGENCY-PROFILE-CONTRACT-APPROVED.md`. Phase 2a owner answer 4 was amended: Approved agencies can edit their profile.
+
+- Checks: typecheck, lint and build pass for all 4 workspaces; `npm test -w backend` passes 52/52; the migration ran on Atlas dev; the HTTPS end-to-end check passed.
+
 ## Next gate (written before Phase 1; kept for history)
 
 Review actual repo/active Git diff; reconcile AI setup; document Phase 1 exact server session/CSRF/dev host, agency/user/session bootstrap/recovery, tenant-scoping and versioned auth API contracts with tests. Obtain explicit owner approval **before auth/tenant business code**. Suggested prompt: `docs/AI/PHASE-1-AUTH-TENANT-CODEX-PROMPT.md`.

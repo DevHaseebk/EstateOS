@@ -1,3 +1,57 @@
+# EstateOS — Phase 3a Agency Admin shell and Agency Profile: implemented and verified by Claude (2026-10-21)
+
+## Current task
+- Contract: `docs/PHASE-3A-AGENCY-PROFILE-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-21, including the section 8 confirmations.
+- The amendment to Phase 2a owner answer 4 is recorded in `docs/PHASE-2A-REVIEW-CONTRACT-APPROVED.md`.
+- Git: branch `master`, HEAD `ed1ae04` (pushed). **All Phase 3a work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-044, D-045 (part), D-046, D-047, D-055, D-085 (Profile side), D-089, D-099, D-100, D-102, D-109, D-110, D-115.
+
+## Work completed
+- **Backend**
+  - `models.ts`: Agency adds `publicContact` ({showMobile, showWhatsapp}, both false by default), `profile` (description, officeAddress, city, serviceAreas, publicEmail), `profileVersion` and `profileUpdatedAt`.
+  - `review.ts`: `ownerCanEdit` now covers Pending, Changes Requested and **Approved** while unrestricted.
+  - `profile-routes.ts` (new):
+    - `GET /owner/profile` and `PUT /owner/profile`;
+    - the PUT saves the whole form in one transaction: Agency plus the owner's `User.name`, a version check, and `PROFILE_CONFLICT` / `PROFILE_READ_ONLY` / `AGENCY_DEACTIVATED`;
+    - the agency comes from the session only.
+  - `validation.ts`: `profileSchema` (strict; empty optional text is stored as absent; email is lower-cased).
+  - The Super Admin detail adds `profile` and `publicContact`. The owner session adds `agency.name`.
+  - The migration also backfills `profileVersion` and `publicContact`.
+- **BFF (owner)**: `GET` and `PUT /owner/profile`; `PUT` method exported.
+- **Agency Admin UI**
+  - `components/AppShell.tsx`:
+    - sidebar from `lg` (1024 px) up and a Menu button below it;
+    - navigation lists only Overview and Agency profile;
+    - an unsaved-changes guard context with a Save / Discard / Stay dialog on navigation and Sign out.
+  - `components/Overview.tsx`: review status and website status shown separately, a Deactivated notice, one primary action to the Profile, and the review card.
+  - `components/ProfileForm.tsx`:
+    - one page with Essentials, "Shown on your website" checkboxes, a read-only login email and a collapsible More details section;
+    - one Save profile button, field-level 422 errors, a 409 conflict message, a `beforeunload` prompt, and read-only mode.
+  - New `lib/api.ts` and `lib/session.ts`. `/` shows the Overview when signed in; new `/profile` route.
+- **Super Admin UI**: the agency page shows "Shown on website", city, address, areas served, public email and the description.
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (all 4 workspaces) → exit 0.
+- `npm test -w backend` → **52/52** (new `test/profile.test.ts`, 11 tests; `bff.test.ts` +1).
+  - The 2a unit test was updated for the amended `ownerCanEdit`.
+  - The 2b migration test now expects 4 updates, because its legacy document also lacks the 3a fields.
+- `migrate:review-axes` on Atlas dev: 4 updates, then 0.
+- HTTPS end-to-end check with the synthetic test owner:
+  - GET defaults; PUT saves (version 1, city and WhatsApp public);
+  - stale PUT → `PROFILE_CONFLICT`; injected agencyId → 422;
+  - the Super Admin detail shows the profile; owner → Super Admin route → 404;
+  - the original values were restored; `/` and `/profile` → 200.
+- Not verified: a visual click-through in Chrome or Edge, in particular the mobile menu and the Save / Discard / Stay dialog.
+
+## Handoff
+- Next: the Phase 3b contract (My Website hub, theme preset, Hero editor, image storage D-105/D-108, D-033 readiness, D-101 private preview, D-085 Profile → site-draft mapping, full D-045 checklist). It needs approval before any code.
+- Preserve:
+  - the profile is saved only as a whole form, with `expectedProfileVersion`;
+  - public contact is private unless chosen;
+  - the navigation lists only screens that are built.
+
+---
+
 # EstateOS — Phase 2b All Agencies directory and Block / Deactivate: implemented and verified by Claude (2026-10-21)
 
 ## Current task

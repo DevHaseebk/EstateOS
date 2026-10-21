@@ -97,10 +97,10 @@ test('unit: transition table allows exactly the contract moves', () => {
   }
 });
 
-test('unit: ownerCanEdit only while Pending or Changes Requested and unrestricted', () => {
+test('unit: ownerCanEdit while Pending, Changes Requested or Approved (Phase 3a amendment) and unrestricted', () => {
   assert.equal(review.ownerCanEdit({ reviewStatus: 'PENDING' }), true);
   assert.equal(review.ownerCanEdit({ reviewStatus: 'CHANGES_REQUESTED', restrictionStatus: 'NONE' }), true);
-  assert.equal(review.ownerCanEdit({ reviewStatus: 'APPROVED' }), false);
+  assert.equal(review.ownerCanEdit({ reviewStatus: 'APPROVED' }), true);
   assert.equal(review.ownerCanEdit({ reviewStatus: 'REJECTED' }), false);
   assert.equal(review.ownerCanEdit({ reviewStatus: 'PENDING', restrictionStatus: 'BLOCKED' }), false);
 });
