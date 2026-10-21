@@ -1,0 +1,18 @@
+# Local development HTTPS proxy for the two management portals (D-081, D-088).
+# Not for production. Certificates come from Caddy's local CA ("caddy trust").
+# Start from the repo root with: npm run proxy
+
+admin.estateos.localhost {
+	tls internal
+	reverse_proxy 127.0.0.1:4001 {
+		# Overwrites any client-supplied value, so the BFF can trust it for rate limiting.
+		header_up X-EstateOS-Client-IP {remote_host}
+	}
+}
+
+control.estateos.localhost {
+	tls internal
+	reverse_proxy 127.0.0.1:4002 {
+		header_up X-EstateOS-Client-IP {remote_host}
+	}
+}

@@ -8,6 +8,7 @@
     "dev:admin": "npm run dev -w admin",
     "dev:super-admin": "npm run dev -w super-admin",
     "dev:backend": "npm run dev -w backend",
+    "proxy": "caddy run --config dev/https/Caddyfile --adapter caddyfile",
     "build": "npm run build --workspaces",
     "typecheck": "npm run typecheck --workspaces",
     "lint": "npm run lint --workspaces"

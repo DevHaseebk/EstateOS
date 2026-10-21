@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const PORTAL = 'SUPER_ADMIN';
-const ORIGIN = process.env.SUPER_ADMIN_ORIGIN ?? 'https://control.estateos.test';
+const ORIGIN = process.env.SUPER_ADMIN_ORIGIN ?? 'https://control.estateos.localhost';
 const COOKIE = '__Host-estateos_super';
 const PREAUTH = '__Host-estateos_preauth_super';
 

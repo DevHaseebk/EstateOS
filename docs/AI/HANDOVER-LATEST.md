@@ -1,3 +1,14 @@
+# EstateOS — Local dev environment working (Claude, 2026-10-21)
+
+- MongoDB Atlas free cluster `estateos-dev` (project `EstateOS`, Mumbai), app user `estateos_app`. Secrets only in gitignored `backend/.env`, `admin/.env.local`, `super-admin/.env.local`.
+- First Super Admin bootstrapped via the CLI; dev password in gitignored `backend/.env.superadmin-dev.local`. A synthetic test owner and Pending agency exist (`backend/.env.testowner-dev.local`, gitignored).
+- Local HTTPS through Caddy (`npm run proxy`, `dev/https/Caddyfile`; Caddy root CA trusted in the Windows CurrentUser store). Dev hosts were switched from `*.estateos.test` to `https://admin.estateos.localhost` and `https://control.estateos.localhost`, because hosts-file edits failed and browsers resolve `*.localhost` themselves. Code defaults, tests, env files and docs were updated. Guide: `docs/LOCAL-DEV-SETUP.md`.
+- Verified through the proxy with real cookies: owner signup 201 Pending; login 200 setting `__Host-estateos_owner` (Secure, HttpOnly, SameSite=Lax, no Domain; token not in JSON); session shows the owner and a PENDING agency; foreign-Origin logout 403; cookies not accepted on the other portal (401); BFF blocks cross-portal routes (404); logout 204, then 401. The same checks pass for the Super Admin portal.
+- Not verified: a visual click-through in a desktop browser. The Claude Code in-app browser refuses `*.estateos.localhost`; the owner should open both URLs in Chrome or Edge.
+- Setup changes (Caddyfile, `proxy` script, `allowedDevOrigins`, loopback-only admin dev servers, `.localhost` hosts, docs) are uncommitted.
+
+---
+
 # EstateOS — Phase 1 auth & tenant foundation: implemented by Codex, verified by Claude (2026-10-21)
 
 ## Current task
@@ -16,7 +27,7 @@
 ## Verification (Claude, Node v24.14.0 from Codex's bundled runtime; system default is v22.0.0, below `engines`)
 - `npm run typecheck` (all 4) → exit 0. `npm run lint` (all 4) → exit 0. `npm run build` (all 4) → exit 0; rebuilt admin, super-admin and backend after the fixes → exit 0.
 - `npm test -w backend` → **12/12 pass**: health without DB, direct-call rejection, Pending signup, CSRF and foreign-Origin rejection, normalized duplicate email (409), cross-tenant 404, agencyId injected via query/header/body (422), cross-portal tokens (401), logout revocation, idle and absolute expiry, reset revoking sessions plus replay rejection, login throttling (429), one-time audited bootstrap, BFF cookie flags, and cross-portal routes.
-- Not run: a browser end-to-end test over the HTTPS `*.estateos.test` proxy, and a real MongoDB replica set (tests use mongodb-memory-server). Diff reviewed: no `.env` files or secrets.
+- Not run: a browser end-to-end test over the HTTPS `*.estateos.localhost` proxy, and a real MongoDB replica set (tests use mongodb-memory-server). Diff reviewed: no `.env` files or secrets.
 
 ## Handoff
 - Open items, not blocking local development:

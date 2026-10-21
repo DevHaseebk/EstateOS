@@ -7,8 +7,8 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
 const key = 'test-internal-api-key-with-at-least-thirty-two-characters';
-const ownerOrigin = 'https://admin.estateos.test';
-const superOrigin = 'https://control.estateos.test';
+const ownerOrigin = 'https://admin.estateos.localhost';
+const superOrigin = 'https://control.estateos.localhost';
 const password = 'Orchid!Harbor!72?Sky';
 let mongo: MongoMemoryReplSet;
 let app: Awaited<typeof import('../src/app.js')>['app'];

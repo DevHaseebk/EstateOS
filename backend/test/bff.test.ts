@@ -14,8 +14,8 @@ test('owner facade sets a host-only secure HttpOnly cookie and strips internal t
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => Response.json({ data: { user: { role: 'AGENCY_OWNER' } }, internal: { sessionToken: 'synthetic-session-token' } });
   try {
-    const request = new NextRequest('https://admin.estateos.test/api/v1/owner/sessions', {
-      method: 'POST', headers: { origin: 'https://admin.estateos.test', 'content-type': 'application/json' },
+    const request = new NextRequest('https://admin.estateos.localhost/api/v1/owner/sessions', {
+      method: 'POST', headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'application/json' },
       body: JSON.stringify({ email: 'synthetic@example.test', password: 'synthetic' }),
     });
     const response = await owner.POST(request, { params: Promise.resolve({ path: ['owner', 'sessions'] }) });
@@ -31,12 +31,12 @@ test('owner facade sets a host-only secure HttpOnly cookie and strips internal t
 });
 
 test('foreign Origin and cross-portal route are rejected before backend forwarding', async () => {
-  const foreign = new NextRequest('https://admin.estateos.test/api/v1/owner/sessions', {
+  const foreign = new NextRequest('https://admin.estateos.localhost/api/v1/owner/sessions', {
     method: 'POST', headers: { origin: 'https://attacker.example', 'content-type': 'application/json' }, body: '{}',
   });
   const originResponse = await owner.POST(foreign, { params: Promise.resolve({ path: ['owner', 'sessions'] }) });
   assert.equal(originResponse.status, 403);
-  const crossPortal = new NextRequest('https://admin.estateos.test/api/v1/super-admin/session');
+  const crossPortal = new NextRequest('https://admin.estateos.localhost/api/v1/super-admin/session');
   const crossResponse = await owner.GET(crossPortal, { params: Promise.resolve({ path: ['super-admin', 'session'] }) });
   assert.equal(crossResponse.status, 404);
 });
@@ -45,8 +45,8 @@ test('Super Admin facade uses a separate cookie', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => Response.json({ data: { user: { role: 'SUPER_ADMIN' } }, internal: { sessionToken: 'synthetic-super-token' } });
   try {
-    const request = new NextRequest('https://control.estateos.test/api/v1/super-admin/sessions', {
-      method: 'POST', headers: { origin: 'https://control.estateos.test', 'content-type': 'application/json' }, body: '{}',
+    const request = new NextRequest('https://control.estateos.localhost/api/v1/super-admin/sessions', {
+      method: 'POST', headers: { origin: 'https://control.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
     });
     const response = await superAdmin.POST(request, { params: Promise.resolve({ path: ['super-admin', 'sessions'] }) });
     assert.equal(response.status, 200);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const PORTAL = 'OWNER';
-const ORIGIN = process.env.OWNER_ORIGIN ?? 'https://admin.estateos.test';
+const ORIGIN = process.env.OWNER_ORIGIN ?? 'https://admin.estateos.localhost';
 const COOKIE = '__Host-estateos_owner';
 const PREAUTH = '__Host-estateos_preauth_owner';
 

@@ -7,7 +7,7 @@ This file describes the Phase 1 foundation only. It does not approve review acti
 - Use Node.js satisfying the root `engines` range. The machine's default Node v22.0.0 is below that range; a supported runtime is required for reliable install, lint, typecheck and builds.
 - Use a MongoDB replica set, including locally, because signup, bootstrap and reset use transactions. Authentication fails closed while MongoDB is unavailable; `GET /api/health` remains available.
 - Run the four root npm workspaces on ports 4000, 4001, 4002 and 4003. Backend defaults to loopback `127.0.0.1:4003`.
-- Map `admin.estateos.test` and `control.estateos.test` to loopback. Put a trusted local HTTPS reverse proxy on port 443 that forwards those two hostnames to ports 4001 and 4002. The proxy must preserve the original `Host` and `Origin`. Trust its local certificate. Do not use two `localhost` ports as cookie boundaries.
+- Use `admin.estateos.localhost` and `control.estateos.localhost` (browsers resolve `*.localhost` to loopback with no hosts-file change). Put a trusted local HTTPS reverse proxy on port 443 that forwards those two hostnames to ports 4001 and 4002. The proxy must preserve the original `Host` and `Origin`. Trust its local certificate. Do not use two `localhost` ports as cookie boundaries.
 - Set the same 32+ character `INTERNAL_API_KEY` in backend, admin and super-admin; set a separate 32+ character `CSRF_SIGNING_KEY` in backend. Use secret injection and keep values out of Git. Set exact `OWNER_ORIGIN` and `SUPER_ADMIN_ORIGIN` in the matching applications.
 
 ## Production boundary

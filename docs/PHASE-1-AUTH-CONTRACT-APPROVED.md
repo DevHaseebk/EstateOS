@@ -16,8 +16,8 @@ If code and this document ever disagree, treat it as a defect and raise it with 
 
 | Part | Local | Notes |
 |---|---|---|
-| Agency Admin (`admin/`) | `https://admin.estateos.test` → port 4001 | Owner portal |
-| Super Admin (`super-admin/`) | `https://control.estateos.test` → port 4002 | Super Admin portal |
+| Agency Admin (`admin/`) | `https://admin.estateos.localhost` → port 4001 | Owner portal |
+| Super Admin (`super-admin/`) | `https://control.estateos.localhost` → port 4002 | Super Admin portal |
 | Backend (`backend/`) | `http://127.0.0.1:4003` (`BIND_HOST`) | Not exposed to browsers or the internet |
 | Public site (`frontend/`) | port 4000 | Never receives management cookies |
 
@@ -25,7 +25,7 @@ If code and this document ever disagree, treat it as a defect and raise it with 
 - The backend rejects every `/api/v1` request without the correct `INTERNAL_API_KEY` (403) and every request whose portal does not match the route (403).
 - Session cookies: `__Host-estateos_owner` / `__Host-estateos_super`, `HttpOnly; Secure; SameSite=Lax; Path=/`, no `Domain`. Pre-auth CSRF nonce cookies: `__Host-estateos_preauth_owner` / `__Host-estateos_preauth_super`, 20 minutes.
 - The raw session token is never returned to browser JavaScript. The BFF strips the backend's `internal` field from responses.
-- Localhost ports are not cookie boundaries. Local development needs HTTPS hostnames through a reverse proxy; see `docs/AI/PHASE-1-RUNTIME.md`.
+- Localhost ports are not cookie boundaries. Local development needs HTTPS hostnames through a reverse proxy; see `docs/LOCAL-DEV-SETUP.md`. (Dev hostnames changed from `*.estateos.test` to `*.estateos.localhost` on 2026-10-21 to avoid hosts-file edits; production hosts are unaffected.)
 
 ## 3. CSRF and Origin (D-088)
 

@@ -2,8 +2,8 @@ import 'dotenv/config';
 
 const port = Number(process.env.PORT ?? 4003);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PORT');
-const ownerOrigin = process.env.OWNER_ORIGIN ?? 'https://admin.estateos.test';
-const superOrigin = process.env.SUPER_ADMIN_ORIGIN ?? 'https://control.estateos.test';
+const ownerOrigin = process.env.OWNER_ORIGIN ?? 'https://admin.estateos.localhost';
+const superOrigin = process.env.SUPER_ADMIN_ORIGIN ?? 'https://control.estateos.localhost';
 for (const origin of [ownerOrigin, superOrigin]) {
   const parsed = new URL(origin);
   if (parsed.origin !== origin || parsed.protocol !== 'https:') throw new Error('Management origins must be exact HTTPS origins');
