@@ -33,7 +33,7 @@ The Phase 2a Super Admin review lifecycle contract is **APPROVED** (2026-10-21) 
 
 ## Phase 2b status (2026-10-21)
 
-Phase 2b contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-2B-DIRECTORY-RESTRICTIONS-CONTRACT-APPROVED.md`.
+Phase 2b contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude**, committed `002b095` and pushed: `docs/PHASE-2B-DIRECTORY-RESTRICTIONS-CONTRACT-APPROVED.md`.
 
 - Built: All Agencies directory (search, filters, pagination); Block / Deactivate / Restore with reasons, an audit entry with `axis: RESTRICTION`, and versioning; Block revokes owner sessions in the same transaction; Deactivated owners are read-only; review decisions are frozen while restricted.
 - Checks: typecheck, lint and build pass for all 4 workspaces; `npm test -w backend` passes 40/40; the migration ran on Atlas dev; the HTTPS end-to-end check passed.
