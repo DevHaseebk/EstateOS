@@ -3,6 +3,7 @@ import mongoose, { type Types } from 'mongoose';
 import { env } from './config/env.js';
 import { Agency, AgencyAudit, PublishedRevision, WebsiteDraft } from './models.js';
 import { ownerCanEdit, ReviewError } from './review.js';
+import { eligibleProperties } from './properties.js';
 import { getReadinessIssues, websiteView, type DraftFields, type ReadinessIssue } from './website.js';
 
 // Phase 4a automatic first Live (docs/PHASE-4A-FIRST-LIVE-CONTRACT-APPROVED.md): D-029, D-077, D-082, D-090, D-091, D-119.
@@ -57,10 +58,10 @@ export function adminPublicationView(agency: PublicationFields) {
 }
 
 type SnapshotAgency = Parameters<typeof websiteView>[0];
-/** The public material of one revision (D-090): exactly what the template renders. Properties arrive in Phase 5. */
-export function snapshotFromDraft(agency: SnapshotAgency, draft: DraftFields) {
+/** The public material of one revision (D-090): exactly what the template renders, including eligible properties (Phase 5a). */
+export async function buildSnapshot(agency: SnapshotAgency, draft: DraftFields, session?: mongoose.ClientSession) {
   const view = websiteView(agency, draft, false);
-  return { theme: view.theme, sections: view.sections, layout: view.layout, mapped: view.mapped, properties: [] as unknown[] };
+  return { theme: view.theme, sections: view.sections, layout: view.layout, mapped: view.mapped, properties: await eligibleProperties(agency._id, session) };
 }
 
 /** Recursively drops internal `version` counters and sorts keys, so identical content always gives the same text. */
@@ -84,7 +85,7 @@ export async function livePublicationDetails(agency: LiveAgency, draft: DraftFie
   const live = await PublishedRevision.findById(agency.publication.liveRevisionId).select('revision createdAt contentHash site').lean();
   if (!live) return {};
   const liveHash = live.contentHash ?? contentFingerprint(live.site);
-  const unpublishedChanges = draft ? contentFingerprint(snapshotFromDraft(agency, draft)) !== liveHash : false;
+  const unpublishedChanges = draft ? contentFingerprint(await buildSnapshot(agency, draft)) !== liveHash : false;
   return { liveRevision: live.revision, publishedAt: live.createdAt, unpublishedChanges };
 }
 
@@ -116,7 +117,7 @@ export async function publishUpdates(input: { agencyId: string; ownerUserId: str
       const draft = await WebsiteDraft.findOne({ agencyId: agency._id }).session(session).lean();
       const issues = draft ? getReadinessIssues(draft) : [];
       if (!draft || issues.length) { outcome = { kind: 'NOT_READY', issues }; return; }
-      const site = snapshotFromDraft(agency, draft);
+      const site = await buildSnapshot(agency, draft, session);
       const contentHash = contentFingerprint(site);
       if (contentHash === (live.contentHash ?? contentFingerprint(live.site))) {
         throw new ReviewError(409, 'NOTHING_TO_PUBLISH', 'There are no saved changes to publish.');
@@ -177,7 +178,7 @@ export async function tryFirstActivation(agencyId: Types.ObjectId | string): Pro
         const draft = await WebsiteDraft.findOne({ agencyId: agency._id }).session(session).lean();
         if (!current || current.publicationStatus === 'LIVE' || !eligible(current, draft)) throw new NotEligible();
         const slug = current.publication?.slug ?? await pickSlug(current.name, session);
-        const site = snapshotFromDraft(current, draft!);
+        const site = await buildSnapshot(current, draft!, session);
         const now = new Date();
         const [revision] = await PublishedRevision.create([{ agencyId: current._id, revision: 1, slug, site, reason: 'FIRST_ACTIVATION', contentHash: contentFingerprint(site), createdAt: now }], { session });
         const fromStatus = current.publicationStatus ?? 'NEVER_PUBLISHED';

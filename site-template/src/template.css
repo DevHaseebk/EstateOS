@@ -97,4 +97,15 @@
 @container (min-width: 1024px) {
   .est-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+/* Phase 5a public property cards (no photos yet: a neutral visual). */
+.est-property { display: grid; padding: 0; overflow: hidden; }
+.est-property-visual { display: grid; place-items: center; aspect-ratio: 16 / 9; background: color-mix(in srgb, var(--est-accent) 12%, var(--est-surface)); color: var(--est-accent); }
+.est-property-visual svg { width: 40px; height: 40px; }
+.est-property-body { display: grid; gap: .4rem; padding: 20px; }
+.est-property-body p { margin: 0; }
+.est-property-meta { font-size: .9rem; color: color-mix(in srgb, var(--est-text) 72%, transparent); }
+.est-pill { display: inline-block; margin-right: .35rem; padding: .1rem .55rem; border-radius: 999px; background: var(--est-accent); color: var(--est-on-accent); font-size: .8rem; font-weight: 600; }
+.est-price { font-weight: 700; font-size: 1.15rem; }
+.est-property .est-button { justify-self: start; margin-top: .4rem; }
+.est-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .est-page * { transition: none !important; animation: none !important; } }

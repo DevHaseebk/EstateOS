@@ -60,8 +60,9 @@ export type DraftFields = {
     services?: { heading?: string | null; cards?: CardFields[] | null; version?: number | null } | null;
     whyChooseUs?: { heading?: string | null; cards?: CardFields[] | null; version?: number | null } | null;
     team?: { heading?: string | null; members?: MemberFields[] | null; version?: number | null } | null;
+    properties?: { heading?: string | null; displayCount?: number | null; version?: number | null } | null;
   } | null;
-  layout?: { order?: string[] | null; visible?: Partial<Record<OptionalKey, boolean | null>> | null; version?: number | null } | null;
+  layout?: { order?: string[] | null; visible?: Partial<Record<OptionalKey | 'properties', boolean | null>> | null; version?: number | null } | null;
   mapped?: { agencyName?: string | null; phone?: string | null; whatsapp?: string | null; publicEmail?: string | null; officeAddress?: string | null; city?: string | null } | null;
 };
 
@@ -104,7 +105,7 @@ export function readinessView(draft: DraftFields) {
   return { ready: issues.length === 0, issues };
 }
 
-export type SectionKey = 'header' | 'hero' | 'contact' | OptionalKey;
+export type SectionKey = 'header' | 'hero' | 'contact' | OptionalKey | 'properties';
 
 /** Phase 3c §3: the content a section needs before it may be shown (never an empty section, D-032). */
 export function hasMinimumContent(draft: DraftFields, section: OptionalKey): boolean {
@@ -118,7 +119,7 @@ export function layoutView(draft: DraftFields) {
   const layout = draft.layout ?? {};
   return {
     order: layout.order?.length === DEFAULT_ORDER.length ? [...layout.order] : [...DEFAULT_ORDER],
-    visible: Object.fromEntries(OPTIONAL_KEYS.map((key) => [key, layout.visible?.[key] ?? false])) as Record<OptionalKey, boolean>,
+    visible: Object.fromEntries([...OPTIONAL_KEYS, 'properties' as const].map((key) => [key, layout.visible?.[key] ?? false])) as Record<OptionalKey | 'properties', boolean>,
     version: layout.version ?? 0,
   };
 }
@@ -137,6 +138,10 @@ export function sectionView(draft: DraftFields, section: SectionKey) {
       cards: (block.cards ?? []).map((card) => ({ title: card.title, ...optional({ [textKey]: card[textKey] }), icon: card.icon })),
       version: block.version ?? 0,
     };
+  }
+  if (section === 'properties') {
+    const block = sections.properties ?? {};
+    return { heading: block.heading ?? 'Our properties', displayCount: block.displayCount === 3 ? 3 : 6, version: block.version ?? 0 };
   }
   if (section === 'team') {
     const team = sections.team ?? {};
@@ -165,7 +170,7 @@ export function websiteView(agency: AgencyFields, draft: DraftFields, canEdit = 
   const mapped = draft.mapped ?? {};
   return {
     theme: { preset: draft.theme?.preset ?? null, version: draft.theme?.version ?? 0 },
-    sections: Object.fromEntries((['header', 'hero', 'contact', ...OPTIONAL_KEYS] as SectionKey[]).map((key) => [key, sectionView(draft, key)])),
+    sections: Object.fromEntries((['header', 'hero', 'contact', ...OPTIONAL_KEYS, 'properties'] as SectionKey[]).map((key) => [key, sectionView(draft, key)])),
     layout: layoutView(draft),
     mapped: Object.fromEntries(['agencyName', 'phone', 'whatsapp', 'publicEmail', 'officeAddress', 'city']
       .map((key) => [key, mapped[key as keyof typeof mapped]]).filter(([, value]) => value)),

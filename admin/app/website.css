@@ -88,3 +88,20 @@ select { width: 100%; box-sizing: border-box; min-height: 46px; padding: .6rem .
 button.primary-link { border: 0; cursor: pointer; font: inherit; font-weight: 700; }
 .secondary-action { margin-left: 1rem; }
 .live-note { margin: -.5rem 0 1rem; padding: .6rem .9rem; border-left: 3px solid #126d59; background: #e8f2ed; border-radius: 6px; }
+
+/* Phase 5a: Properties list cards (D-056) and form. */
+.list-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.empty-state { padding: 1.25rem; background: #fff; border: 1px dashed #b9c6bd; border-radius: 14px; }
+.property-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+.property-card { display: grid; overflow: hidden; background: #fff; border: 1px solid #d5ded8; border-radius: 14px; }
+.property-visual { display: grid; place-items: center; aspect-ratio: 16 / 9; background: #eef3ef; color: #365D6A; }
+.property-visual svg { width: 36px; height: 36px; }
+.property-card-body { display: grid; gap: .3rem; padding: 1rem; }
+.property-card-body h2 { margin: 0; font-size: 1.1rem; overflow-wrap: anywhere; }
+.property-card-body p { margin: 0; }
+.property-meta { color: #4c6057; font-size: .88rem; }
+.property-price { font-weight: 700; }
+.status-pill { display: inline-block; margin-right: .4rem; padding: .05rem .5rem; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+.availability-available { background: #e3f1eb; color: #0f5a4a; }
+.availability-sold, .availability-rented { background: #eef1ee; color: #4c6057; }
+@media (max-width: 639px) { .property-cards { grid-template-columns: 1fr; } }

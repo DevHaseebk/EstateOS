@@ -7,10 +7,10 @@ import type { OptionalSection, WebsiteData } from 'site-template';
 import { useGuardedAction } from '../../components/AppShell';
 import { OwnerPage } from '../../components/OwnerPage';
 import { useWebsite } from '../../lib/website';
-import { BasicSectionForm, CardsForm, LayoutPanel, TeamForm } from './forms';
+import { BasicSectionForm, CardsForm, LayoutPanel, PropertiesSectionForm, TeamForm } from './forms';
 
-type EditorKey = 'layout' | 'header' | 'hero' | 'contact' | 'about' | 'services' | 'whyChooseUs' | 'team' | 'footer';
-const SECTIONS: { key: EditorKey; label: string; hint: string; optional?: Exclude<OptionalSection, 'properties'> }[] = [
+type EditorKey = 'layout' | 'header' | 'hero' | 'contact' | 'about' | 'services' | 'whyChooseUs' | 'team' | 'properties' | 'footer';
+const SECTIONS: { key: EditorKey; label: string; hint: string; optional?: OptionalSection }[] = [
   { key: 'layout', label: 'Layout', hint: 'Show, hide and order extra sections' },
   { key: 'header', label: 'Header', hint: 'Agency name and contact button' },
   { key: 'hero', label: 'Hero', hint: 'Main heading, photo and button' },
@@ -18,6 +18,7 @@ const SECTIONS: { key: EditorKey; label: string; hint: string; optional?: Exclud
   { key: 'services', label: 'Services', hint: 'What you offer', optional: 'services' },
   { key: 'whyChooseUs', label: 'Why Choose Us', hint: 'Reasons to choose you', optional: 'whyChooseUs' },
   { key: 'team', label: 'Team', hint: 'Your agents', optional: 'team' },
+  { key: 'properties', label: 'Properties', hint: 'Your listings on the website', optional: 'properties' },
   { key: 'contact', label: 'Contact', hint: 'Contact heading and message' },
   { key: 'footer', label: 'Footer', hint: 'Built from your Agency profile' },
 ];
@@ -64,6 +65,7 @@ function Editor() {
         <BasicSectionForm key={current} website={website} sectionKey={current} onSaved={setWebsite} />}
       {(current === 'services' || current === 'whyChooseUs') && <CardsForm key={current} website={website} sectionKey={current} onSaved={setWebsite} />}
       {current === 'team' && <TeamForm key="team" website={website} onSaved={setWebsite} />}
+      {current === 'properties' && <PropertiesSectionForm key="properties" website={website} onSaved={setWebsite} />}
     </div>
   </div></>;
 }

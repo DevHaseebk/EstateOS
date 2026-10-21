@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { AdminHeader } from '../../components/AdminHeader';
+import { AgencyProperties } from '../../components/AgencyProperties';
 import { DecisionDialog, type DecisionKind } from '../../components/DecisionDialog';
 import { ACTION_LABELS, ApiError, apiGet, apiMutation, formatDate, RESTRICTION_LABELS, REVIEW_LABELS, statusLabel, websiteLabel } from '../../lib/api';
 
@@ -171,6 +172,8 @@ export default function AgencyReviewPage() {
         </section>
         </div>
       </div>
+
+      <AgencyProperties agencyId={detail.id} />
 
       <section className="panel" aria-labelledby="history-title">
         <h2 id="history-title">History</h2>

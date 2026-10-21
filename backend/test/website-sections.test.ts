@@ -62,7 +62,8 @@ const putSection = (token: string, section: string, body: object, extra: Record<
 const putLayout = (token: string, body: object) => authed('put', 'OWNER', token, '/api/v1/owner/website/layout', body);
 const superPost = (url: string, body: object) => authed('post', 'SUPER_ADMIN', superToken, url, body);
 const ORDER = ['about', 'services', 'properties', 'whyChooseUs', 'team'];
-const hidden = { about: false, services: false, whyChooseUs: false, team: false };
+// Phase 5a added the Properties slot to the layout; it defaults to hidden.
+const hidden = { about: false, services: false, whyChooseUs: false, team: false, properties: false };
 const story = 'We are a family-run agency helping buyers and sellers since 2010.';
 const services = (version: number, count = 2) => ({
   heading: 'What we do',

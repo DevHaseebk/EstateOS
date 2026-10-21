@@ -1,3 +1,51 @@
+# EstateOS — Phase 5a Properties (without photos): implemented and verified by Claude (2026-10-22)
+
+## Current task
+- Contract: `docs/PHASE-5A-PROPERTIES-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 6 confirmations.
+- Git: branch `master`, HEAD `3986c37` (pushed). **All Phase 5a work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-031, D-032, D-046, D-047, D-056–D-058, D-061–D-063, D-078, D-084, D-089, D-103, D-104, D-109, D-110, D-115.
+
+## Work completed
+- **Backend**
+  - `models.ts`: `Property` (title, intent, type, pricePkr, city, area, size {value, unit}, bedrooms, bathrooms, description, availability, archivedAt, version); the draft adds `sections.properties` {heading, displayCount 3|6}; the layout adds `visible.properties`.
+  - `properties.ts`: `ELIGIBLE_FILTER` (Available and not archived), public/owner views, `eligibleProperties` (newest first, max 200).
+  - `property-routes.ts`:
+    - owner list/get/create/update (whole form plus availability with `expectedVersion`) and archive/restore;
+    - 404 for another agency's ids; `PROPERTIES_READ_ONLY`; `PROPERTY_LIMIT` (200 active); `PROPERTY_CONFLICT`; `INVALID_TRANSITION`;
+    - Super Admin read-only list.
+  - `validation.ts`: `createPropertySchema`, `updatePropertySchema` (Sold only for Sale, Rented only for Rent), the properties section schema, and `visible.properties` (default false).
+  - `publication.ts`: `buildSnapshot` is now async and includes the eligible properties, used by first Live and Publish updates (fingerprint included).
+  - `website-routes.ts`: the properties section save; showing Properties needs an eligible property; the owner and Super Admin website GETs include `properties` for previews.
+- **site-template**:
+  - `property.ts` (labels, `formatPrice`, `propertyFacts`, `PublicProperty`);
+  - the model's properties block (only visible plus eligible, sliced to `displayCount`);
+  - public property cards with an Enquire link (WhatsApp with a prefilled message, else phone) and CSS.
+- **BFF**: the owner property routes plus the properties section; Super Admin `agencies/:id/properties`.
+- **Agency Admin**:
+  - navigation adds Properties; `/properties` (cards, Active/Archived, empty state), `/properties/new`, `/properties/[id]`;
+  - `PropertyForm` (Basics; expandable Details and Photos placeholder; availability; Save property with guard; Archive/Restore confirmation);
+  - the editor's Properties section; the Layout Properties row; Overview "Add a property" (optional); post-Live notes.
+- **Super Admin**: `AgencyProperties` read-only panel.
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (5 workspaces) → exit 0.
+- `npm test -w backend` → **111/111** (new `properties.test.ts`, 11 tests; `bff.test.ts` +1). Two 3c assertions were updated: the Properties section path is now valid, and the layout default includes `properties: false`.
+- Server-render: the Properties section in all 3 themes (`displayCount` slice, prices, Enquire WhatsApp link, nav); a section shown with no eligible properties is absent.
+- HTTPS end-to-end check on the synthetic Live agency (backend temporarily on the photo fixture, then restarted normally). The first attempt failed because the internet IP had changed; the owner added it in Atlas → Network Access.
+  - add a sale house and a rent flat → 201; Sold on a Rent listing → 422;
+  - show Properties → 200; unpublishedChanges = true, preview shows 2, public shows none;
+  - publish → revision 3; the public page shows both, the prices "PKR 45,000,000" and "PKR 85,000 / month", and the WhatsApp Enquire link;
+  - mark the house Sold → the public page is unchanged until publish → after publish (revision 4) it is gone;
+  - the Super Admin list shows AVAILABLE and SOLD; the Agency Admin property pages → 200.
+- Not verified: a visual click-through in a browser.
+
+## Handoff
+- **Owner note:** the Atlas access list also has a pending `0.0.0.0/0` (allow from anywhere) entry. It is not needed now that the owner's current IP entry is Active, and is safer removed.
+- **Owner action still open:** licensed Hero photos.
+- Next: 3d (uploads; storage account), which also adds property photos.
+
+---
+
 # EstateOS — Phase 4b Publish Updates: implemented and verified by Claude (2026-10-22)
 
 ## Current task

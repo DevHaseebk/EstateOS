@@ -1,8 +1,9 @@
 import { HERO_IMAGE_SRC } from './hero-images';
+import type { PublicProperty } from './property';
 import type { OptionalBlock, OptionalSection, SiteIcon, SiteModel, ThemePreset } from './types';
 
 type CardData = { title: string; icon: SiteIcon };
-export type LayoutData = { order: OptionalSection[]; visible: Record<'about' | 'services' | 'whyChooseUs' | 'team', boolean>; version: number };
+export type LayoutData = { order: OptionalSection[]; visible: Record<'about' | 'services' | 'whyChooseUs' | 'team' | 'properties', boolean>; version: number };
 
 /** Shape of GET /owner/website and GET /super-admin/agencies/:id/website (Phase 3b contract §6). */
 export type WebsiteData = {
@@ -15,7 +16,11 @@ export type WebsiteData = {
     services: { heading: string; cards: (CardData & { description?: string })[]; version: number };
     whyChooseUs: { heading: string; cards: (CardData & { detail?: string })[]; version: number };
     team: { heading: string; members: { name: string; role?: string; phone?: string; whatsapp?: string; contactConsent?: boolean }[]; version: number };
+    /** Phase 5a: public Properties section settings (D-032). */
+    properties: { heading: string; displayCount: 3 | 6; version: number };
   };
+  /** Phase 5a: eligible properties (Available, not archived) — the draft's for previews, the revision's when published. */
+  properties?: PublicProperty[];
   layout: LayoutData;
   mapped: { agencyName?: string; phone?: string; whatsapp?: string; publicEmail?: string; officeAddress?: string; city?: string };
   readiness: { ready: boolean; issues: { key: string; message: string }[] };
@@ -30,14 +35,20 @@ export type WebsiteData = {
 };
 
 /** The renderable part of a website: the saved draft, or a frozen published revision (Phase 4a, D-090). */
-export type SiteContent = Pick<WebsiteData, 'theme' | 'sections' | 'layout' | 'mapped'>;
+export type SiteContent = Pick<WebsiteData, 'theme' | 'sections' | 'layout' | 'mapped' | 'properties'>;
 
 /** Phase 3c §3: a section is shown only when switched on AND it has its minimum content (never an empty section). */
 function optionalBlocks(website: SiteContent): OptionalBlock[] {
   const { about, services, whyChooseUs, team } = website.sections;
   const blocks: OptionalBlock[] = [];
   for (const key of website.layout.order) {
-    if (key === 'properties' || !website.layout.visible[key]) continue;
+    if (!website.layout.visible[key]) continue;
+    // Never an empty section and never fake listings (D-032, D-078): only real eligible properties, newest first.
+    if (key === 'properties') {
+      const items = (website.properties ?? []).slice(0, website.sections.properties?.displayCount ?? 6);
+      if (items.length) blocks.push({ key, heading: website.sections.properties?.heading ?? 'Our properties', items });
+      continue;
+    }
     if (key === 'about' && about.story) blocks.push({ key, heading: about.heading, story: about.story });
     if (key === 'services' && services.cards.length) blocks.push({ key, heading: services.heading, cards: services.cards.map(({ title, description, icon }) => ({ title, text: description, icon })) });
     if (key === 'whyChooseUs' && whyChooseUs.cards.length) blocks.push({ key, heading: whyChooseUs.heading, cards: whyChooseUs.cards.map(({ title, detail, icon }) => ({ title, text: detail, icon })) });

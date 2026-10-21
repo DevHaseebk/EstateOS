@@ -189,7 +189,7 @@ test('Phase 3c optional section and layout routes are owner-only PUTs', async ()
     }
     assert.equal((await put(owner, 'admin.estateos.localhost', ['owner', 'website', 'layout'])).status, 200);
     const forwardedCount = forwarded.length;
-    assert.equal((await put(owner, 'admin.estateos.localhost', ['owner', 'website', 'sections', 'properties'])).status, 404);
+    assert.equal((await put(owner, 'admin.estateos.localhost', ['owner', 'website', 'sections', 'footer'])).status, 404); // 'properties' became a real section in Phase 5a
     assert.equal((await put(owner, 'admin.estateos.localhost', ['owner', 'website', 'sections', 'faq'])).status, 404);
     assert.equal((await superAdmin.POST(new NextRequest('https://control.estateos.localhost/api/v1/owner/website/layout', {
       method: 'POST', headers: { origin: 'https://control.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
@@ -221,6 +221,35 @@ test('Phase 4b publish route is an owner-only POST', async () => {
       method: 'POST', headers: { origin: 'https://attacker.example', 'content-type': 'application/json' }, body: '{}',
     }), ctx(['owner', 'website', 'publish']));
     assert.equal(foreign.status, 403);
+    assert.equal(forwarded.length, forwardedCount);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('Phase 5a property routes: owner CRUD paths and Super Admin read-only list', async () => {
+  const originalFetch = globalThis.fetch;
+  const forwarded: string[] = [];
+  globalThis.fetch = async (input: string | URL | Request) => { forwarded.push(String(input)); return Response.json({ data: {} }); };
+  const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
+  const id = 'd'.repeat(24);
+  const ownerReq = (method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string[]) => {
+    const request = new NextRequest(`https://admin.estateos.localhost/api/v1/${path.join('/')}`, method === 'GET'
+      ? undefined : { method, headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'application/json' }, body: method === 'DELETE' ? undefined : '{}' });
+    return owner[method](request, ctx(path));
+  };
+  try {
+    assert.equal((await ownerReq('GET', ['owner', 'properties'])).status, 200);
+    assert.equal((await ownerReq('GET', ['owner', 'properties', id])).status, 200);
+    assert.equal((await ownerReq('POST', ['owner', 'properties'])).status, 200);
+    assert.equal((await ownerReq('PUT', ['owner', 'properties', id])).status, 200);
+    assert.equal((await ownerReq('POST', ['owner', 'properties', id, 'archive'])).status, 200);
+    assert.equal((await ownerReq('POST', ['owner', 'properties', id, 'restore'])).status, 200);
+    assert.equal((await ownerReq('PUT', ['owner', 'website', 'sections', 'properties'])).status, 200);
+    assert.equal((await superAdmin.GET(new NextRequest(`https://control.estateos.localhost/api/v1/super-admin/agencies/${id}/properties`), ctx(['super-admin', 'agencies', id, 'properties']))).status, 200);
+    const forwardedCount = forwarded.length;
+    assert.equal((await ownerReq('DELETE', ['owner', 'properties', id])).status, 404);
+    assert.equal((await ownerReq('POST', ['owner', 'properties', id, 'delete'])).status, 404);
+    assert.equal((await ownerReq('GET', ['super-admin', 'agencies', id, 'properties'])).status, 404);
+    assert.equal((await superAdmin.GET(new NextRequest('https://control.estateos.localhost/api/v1/owner/properties'), ctx(['owner', 'properties']))).status, 404);
     assert.equal(forwarded.length, forwardedCount);
   } finally { globalThis.fetch = originalFetch; }
 });

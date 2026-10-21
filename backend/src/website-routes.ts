@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { ZodError } from 'zod';
 import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requireOwnerWritable, requirePortal, type AuthRequest } from './auth.js';
-import { Agency, WebsiteDraft } from './models.js';
+import { Agency, Property, WebsiteDraft } from './models.js';
+import { ELIGIBLE_FILTER, eligibleProperties } from './properties.js';
 import { ownerCanEdit, ReviewError } from './review.js';
 import { afterReadinessChange, livePublicationDetails, ownerPublicationView, publishUpdates } from './publication.js';
 import { ownerScope, superAdminScope, tenantAgencyFilter } from './tenant.js';
@@ -71,6 +72,10 @@ function sectionUpdate(key: Section, body: unknown, draft: DraftFields, path: st
     const input = sectionSchemas.whyChooseUs.parse(body);
     put('heading', input.heading);
     put('cards', input.cards.map(defined));
+  } else if (key === 'properties') {
+    const input = sectionSchemas.properties.parse(body);
+    put('heading', input.heading);
+    put('displayCount', input.displayCount);
   } else {
     const input = sectionSchemas.team.parse(body);
     put('heading', input.heading);
@@ -101,7 +106,7 @@ router.get('/owner/website', asyncRoute(async (request, response) => {
   const agency = await Agency.findOne(tenantAgencyFilter(ownerScope(context!.user))).lean();
   if (!agency) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');
   const draft = await ensureDraft(agency);
-  response.json({ data: { ...websiteView(agency, draft), publication: { ...ownerPublicationView(agency), ...await livePublicationDetails(agency, draft) } } });
+  response.json({ data: { ...websiteView(agency, draft), properties: await eligibleProperties(agency._id), publication: { ...ownerPublicationView(agency), ...await livePublicationDetails(agency, draft) } } });
 }));
 
 // Phase 4b: deliberate owner Publish updates for an already-Live website (D-053). Never a first-Live gate (D-029).
@@ -168,6 +173,10 @@ router.put('/owner/website/layout', asyncRoute(async (request, response) => {
   const input = layoutSchema.parse(request.body);
   const draft = await ensureDraft(agency);
   const conditions: Record<string, unknown>[] = [{ agencyId: agency._id }, versionFilter('layout.version', input.expectedLayoutVersion)];
+  // Phase 5a: the Properties slot can be shown only with at least one eligible (Available, not archived) property.
+  if (input.visible.properties && !await Property.exists({ agencyId: agency._id, ...ELIGIBLE_FILTER })) {
+    fieldError('visible.properties', 'Add an available property before showing the Properties section.');
+  }
   for (const key of OPTIONAL_KEYS) {
     if (!input.visible[key]) continue;
     if (!hasMinimumContent(draft, key)) fieldError(`visible.${key}`, `Add content to ${OPTIONAL_LABELS[key]} before showing it.`);
@@ -195,7 +204,7 @@ router.get('/super-admin/agencies/:agencyId/website', asyncRoute(async (request,
   if (!agency) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');
   // Read-only: never creates a draft for the agency.
   const draft = await WebsiteDraft.findOne({ agencyId: agency._id }).lean() ?? virtualDraft(agency);
-  response.json({ data: websiteView(agency, draft, false) });
+  response.json({ data: { ...websiteView(agency, draft, false), properties: await eligibleProperties(agency._id) } });
 }));
 
 export { router as websiteRouter };

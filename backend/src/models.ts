@@ -141,7 +141,7 @@ for (const operation of ['updateOne', 'updateMany', 'findOneAndUpdate', 'replace
 
 // Phase 3b: one private website draft per agency (D-050/D-052). Never public; always scoped by agencyId (D-089).
 export const THEME_PRESETS = ['MODERN_LIGHT', 'WARM_EDITORIAL', 'CONTEMPORARY_DARK'] as const;
-export const WEBSITE_SECTIONS = ['header', 'hero', 'contact', 'about', 'services', 'whyChooseUs', 'team'] as const;
+export const WEBSITE_SECTIONS = ['header', 'hero', 'contact', 'about', 'services', 'whyChooseUs', 'team', 'properties'] as const;
 // Phase 3c: D-032 optional sections, their default order (Properties is Phase 5) and the fixed icon list.
 export const OPTIONAL_ORDER = ['about', 'services', 'properties', 'whyChooseUs', 'team'] as const;
 export const SITE_ICONS = ['home', 'key', 'building', 'handshake', 'document', 'map-pin', 'search', 'chart', 'shield', 'star', 'phone', 'people'] as const;
@@ -198,12 +198,20 @@ const draftTeamSchema = new Schema({
   },
   version: { type: Number, required: true, default: 0 },
 }, { _id: false });
+// Phase 5a (D-032): public Properties section settings; the listings themselves are Property records.
+const draftPropertiesSchema = new Schema({
+  heading: { type: String, required: true, default: 'Our properties' },
+  displayCount: { type: Number, enum: [3, 6], required: true, default: 6 },
+  version: { type: Number, required: true, default: 0 },
+}, { _id: false });
 const draftLayoutSchema = new Schema({
   order: { type: [{ type: String, enum: OPTIONAL_ORDER }], default: () => [...OPTIONAL_ORDER] },
   visible: {
     type: new Schema({
       about: { type: Boolean, default: false }, services: { type: Boolean, default: false },
       whyChooseUs: { type: Boolean, default: false }, team: { type: Boolean, default: false },
+      // Phase 5a: the reserved Properties slot can now be shown (only with an eligible property).
+      properties: { type: Boolean, default: false },
     }, { _id: false }),
     default: () => ({}),
   },
@@ -235,6 +243,7 @@ const websiteDraftSchema = new Schema({
       services: { type: draftServicesSchema, default: () => ({}) },
       whyChooseUs: { type: draftWhyChooseUsSchema, default: () => ({}) },
       team: { type: draftTeamSchema, default: () => ({}) },
+      properties: { type: draftPropertiesSchema, default: () => ({}) },
     }, { _id: false }),
     default: () => ({}),
   },
@@ -260,7 +269,31 @@ for (const operation of ['updateOne', 'updateMany', 'findOneAndUpdate', 'replace
   publishedRevisionSchema.pre(operation, () => { throw new Error('REVISION_APPEND_ONLY'); });
 }
 
+// Phase 5a (D-058, D-062, D-103, D-104): agency property records. Never deleted; Archive is reversible.
+export const PROPERTY_INTENTS = ['SALE', 'RENT'] as const;
+export const PROPERTY_TYPES = ['HOUSE', 'APARTMENT', 'PLOT', 'SHOP', 'OFFICE', 'OTHER'] as const;
+export const PROPERTY_AVAILABILITY = ['AVAILABLE', 'SOLD', 'RENTED'] as const;
+export const SIZE_UNITS = ['SQ_FT', 'SQ_YD', 'MARLA', 'KANAL'] as const;
+const propertySchema = new Schema({
+  agencyId: { type: Schema.Types.ObjectId, ref: 'Agency', required: true, immutable: true },
+  title: { type: String, required: true },
+  intent: { type: String, enum: PROPERTY_INTENTS, required: true },
+  type: { type: String, enum: PROPERTY_TYPES, required: true },
+  pricePkr: { type: Number, required: true },
+  city: { type: String, required: true },
+  area: { type: String, required: true },
+  size: { type: new Schema({ value: { type: Number, required: true }, unit: { type: String, enum: SIZE_UNITS, required: true } }, { _id: false }) },
+  bedrooms: { type: Number },
+  bathrooms: { type: Number },
+  description: { type: String },
+  availability: { type: String, enum: PROPERTY_AVAILABILITY, required: true, default: 'AVAILABLE' },
+  archivedAt: { type: Date },
+  version: { type: Number, required: true, default: 0 },
+}, { timestamps: true });
+propertySchema.index({ agencyId: 1, archivedAt: 1, createdAt: -1, _id: -1 });
+
 export const Agency = mongoose.model('Agency', agencySchema);
+export const Property = mongoose.model('Property', propertySchema);
 export const PublishedRevision = mongoose.model('PublishedRevision', publishedRevisionSchema);
 export const WebsiteDraft = mongoose.model('WebsiteDraft', websiteDraftSchema);
 export const AgencyAudit = mongoose.model('AgencyAudit', agencyAuditSchema);

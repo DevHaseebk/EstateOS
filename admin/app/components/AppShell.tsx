@@ -18,6 +18,7 @@ export const useGuardedAction = () => useContext(GuardContext).guarded;
 const NAV = [
   { href: '/', label: 'Overview' },
   { href: '/website', label: 'My Website' },
+  { href: '/properties', label: 'Properties' },
   { href: '/profile', label: 'Agency profile' },
 ];
 const isCurrent = (pathname: string, href: string) => href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);

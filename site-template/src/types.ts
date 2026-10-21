@@ -14,6 +14,8 @@ export const THEME_DESCRIPTIONS: Record<ThemePreset, string> = {
   CONTEMPORARY_DARK: 'Dark and premium, with soft gold accents.',
 };
 
+import type { PublicProperty } from './property';
+
 // Phase 3c: the D-032 optional sections, a fixed icon list, and their default order (Properties waits for Phase 5).
 export const SITE_ICONS = ['home', 'key', 'building', 'handshake', 'document', 'map-pin', 'search', 'chart', 'shield', 'star', 'phone', 'people'] as const;
 export type SiteIcon = typeof SITE_ICONS[number];
@@ -31,6 +33,7 @@ export type Card = { title: string; text?: string; icon: SiteIcon };
 export type TeamMember = { name: string; role?: string; phone?: string; whatsapp?: string };
 /** One shown optional section, already filtered to visible + minimum content, in layout order. */
 export type OptionalBlock =
+  | { key: 'properties'; heading: string; items: PublicProperty[] }
   | { key: 'about'; heading: string; story: string }
   | { key: 'services' | 'whyChooseUs'; heading: string; cards: Card[] }
   | { key: 'team'; heading: string; members: TeamMember[] };

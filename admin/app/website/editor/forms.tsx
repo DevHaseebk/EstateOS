@@ -245,10 +245,34 @@ export function TeamForm({ website, onSaved }: { website: WebsiteData; onSaved: 
   </FormShell>;
 }
 
+// ---- Properties section settings (Phase 5a, D-032): heading and 3 or 6 cards; the listings are managed under Properties ----
+type PropertiesValues = { heading: string; displayCount: string };
+export function PropertiesSectionForm({ website, onSaved }: { website: WebsiteData; onSaved: OnSaved }) {
+  const toValues = (data: WebsiteData): PropertiesValues => ({ heading: data.sections.properties.heading, displayCount: String(data.sections.properties.displayCount) });
+  const submit = useCallback(async (values: PropertiesValues) => toValues(await saveSection(website, 'properties',
+    { heading: values.heading, displayCount: Number(values.displayCount) }, onSaved)), [website, onSaved]);
+  const { values, setValues, dirty, saving, errors, message, save } = useDraftForm(toValues(website), submit);
+  const disabled = !website.canEdit || saving;
+  const count = website.properties?.length ?? 0;
+  return <FormShell title="Properties" readOnly={!website.canEdit} dirty={dirty} saving={saving} message={message} onSubmit={save}>
+    <p className="field-hint">Your website shows your newest available properties. {count} available now. <Link href="/properties">Manage properties</Link></p>
+    <TextField id="properties-heading" label="Heading" value={values.heading} onChange={(heading) => setValues({ ...values, heading })} max={60} error={errors.heading} disabled={disabled} />
+    <fieldset className="choice-group">
+      <legend>How many properties to show</legend>
+      {['3', '6'].map((option) => <label key={option} className="checkbox">
+        <input type="radio" name="displayCount" value={option} checked={values.displayCount === option} disabled={disabled} onChange={() => setValues({ ...values, displayCount: option })} /> {option}
+      </label>)}
+      {errors.displayCount && <p className="field-error">{errors.displayCount}</p>}
+    </fieldset>
+  </FormShell>;
+}
+
 // ---- Layout: show/hide and order of the optional sections, saved on its own (Phase 3c §1 Q3) ----
 type LayoutValues = Pick<LayoutData, 'order' | 'visible'>;
 const hasContent = (website: WebsiteData, key: OptionalSection) => {
   const { about, services, whyChooseUs, team } = website.sections;
+  // Phase 5a: Properties needs at least one Available, non-archived property.
+  if (key === 'properties') return (website.properties?.length ?? 0) > 0;
   return key === 'about' ? Boolean(about.story) : key === 'services' ? services.cards.length > 0 : key === 'whyChooseUs' ? whyChooseUs.cards.length > 0 : key === 'team' ? team.members.length > 0 : false;
 };
 
@@ -265,7 +289,6 @@ export function LayoutPanel({ website, onSaved, onEdit }: { website: WebsiteData
     <ol className="layout-rows">
       {values.order.map((key, index) => {
         const label = OPTIONAL_SECTION_LABELS[key];
-        if (key === 'properties') return <li key={key} className="layout-row muted-row"><strong>{label}</strong><span className="field-hint">Comes with Properties in a later phase.</span></li>;
         const content = hasContent(website, key);
         const shown = values.visible[key];
         return <li key={key} className="layout-row">
@@ -273,7 +296,9 @@ export function LayoutPanel({ website, onSaved, onEdit }: { website: WebsiteData
             <input type="checkbox" checked={shown} disabled={!content && !shown} onChange={(event) => setValues({ ...values, visible: { ...values.visible, [key]: event.target.checked } })} />
             <strong>{label}</strong> <span className="field-hint">{shown ? 'Shown' : 'Hidden'}</span>
           </label>
-          {!content && <span className="field-hint">Add content first. <button type="button" className="link-button" onClick={() => onEdit(key)}>Edit {label}</button></span>}
+          {!content && (key === 'properties'
+            ? <span className="field-hint">Add an available property first. <Link href="/properties">Open Properties</Link></span>
+            : <span className="field-hint">Add content first. <button type="button" className="link-button" onClick={() => onEdit(key)}>Edit {label}</button></span>)}
           {errors[`visible.${key}`] && <p className="field-error">{errors[`visible.${key}`]}</p>}
           {website.canEdit && <div className="row-controls">
             <button type="button" className="secondary small" disabled={index === 0} onClick={() => setValues({ ...values, order: move(values.order, index, -1) })} aria-label={`Move ${label} up`}>Move up</button>

@@ -132,11 +132,17 @@ export const sectionSchemas = {
     })).max(12, 'At most 12 team members'),
     expectedVersion: z.number().int().min(0),
   }),
+  // Phase 5a: public Properties section settings (D-032: 3 or 6 cards, newest first).
+  properties: z.strictObject({
+    heading: sectionText(3, 60),
+    displayCount: z.union([z.literal(3), z.literal(6)], 'Choose 3 or 6'),
+    expectedVersion: z.number().int().min(0),
+  }),
 } as const;
 export const layoutSchema = z.strictObject({
   order: z.array(z.enum(['about', 'services', 'properties', 'whyChooseUs', 'team'])).length(5)
     .refine((order) => new Set(order).size === 5, 'Each section must appear exactly once'),
-  visible: z.strictObject({ about: z.boolean(), services: z.boolean(), whyChooseUs: z.boolean(), team: z.boolean() }),
+  visible: z.strictObject({ about: z.boolean(), services: z.boolean(), whyChooseUs: z.boolean(), team: z.boolean(), properties: z.boolean().default(false) }),
   expectedLayoutVersion: z.number().int().min(0),
 });
 
@@ -145,3 +151,31 @@ export const publishSchema = z.strictObject({
   expectedLiveRevision: z.number().int().min(1),
   requestId: z.uuid('requestId must be a UUID'),
 });
+
+// Phase 5a contract §2: one property record, saved as a whole form (D-058, D-061, D-103).
+const sizeValue = z.number().positive('Must be more than 0').max(1_000_000, 'Must be at most 1,000,000')
+  .refine((value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-9, 'Use at most 2 decimals');
+const roomCount = z.number().int('Must be a whole number').min(0).max(20, 'Must be at most 20').nullable().optional().transform((value) => value ?? undefined);
+const propertyFields = {
+  title: sectionText(3, 100),
+  intent: z.enum(['SALE', 'RENT'], 'Choose For Sale or For Rent'),
+  type: z.enum(['HOUSE', 'APARTMENT', 'PLOT', 'SHOP', 'OFFICE', 'OTHER'], 'Choose a property type'),
+  pricePkr: z.number('Enter a price').int('Use a whole number of rupees').min(1, 'Must be at least 1').max(10_000_000_000, 'Must be at most 10,000,000,000'),
+  city: sectionText(2, 80),
+  area: sectionText(2, 80),
+  size: z.strictObject({ value: sizeValue, unit: z.enum(['SQ_FT', 'SQ_YD', 'MARLA', 'KANAL'], 'Choose a unit') }).nullable().optional().transform((value) => value ?? undefined),
+  bedrooms: roomCount,
+  bathrooms: roomCount,
+  description: optionalSectionText(2000),
+};
+/** Phase 5a §1 Q3: Sold only for Sale listings, Rented only for Rent listings. */
+const fitsIntent = (input: { intent: string; availability?: string }) =>
+  !(input.availability === 'SOLD' && input.intent !== 'SALE') && !(input.availability === 'RENTED' && input.intent !== 'RENT');
+export const createPropertySchema = z.strictObject(propertyFields);
+export const updatePropertySchema = z.strictObject({
+  ...propertyFields,
+  availability: z.enum(['AVAILABLE', 'SOLD', 'RENTED']),
+  expectedVersion: z.number().int().min(0),
+}).refine(fitsIntent, { message: 'Sold is only for For Sale listings and Rented only for For Rent listings', path: ['availability'] });
+export const propertyVersionSchema = z.strictObject({ expectedVersion: z.number().int().min(0) });
+export const propertyListQuerySchema = z.strictObject({ archived: z.enum(['true', 'false']).default('false') });

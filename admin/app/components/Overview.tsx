@@ -56,6 +56,8 @@ export function Overview({ session, onStatusChange, onSessionEnded }: { session:
         <li><Link href="/website/preview">Preview website</Link><span>Private</span></li>
       </ol>
     </section>}
+    {/* D-047: optional secondary shortcut; properties are never required to go live. */}
+    <p className="field-hint"><Link href="/properties/new" className="back-link">Add a property</Link> (optional)</p>
     <ReviewStatusCard agencyId={session.agency.id} onSessionEnded={onSessionEnded} onStatusChange={onStatusChange} />
   </div>;
 }

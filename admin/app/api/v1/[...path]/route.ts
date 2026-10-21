@@ -8,11 +8,13 @@ const PREAUTH = '__Host-estateos_preauth_owner';
 async function handle(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
   const route = `/api/v1/${path.join('/')}`;
-  const allowed = (request.method === 'GET' && (['/api/v1/auth/csrf', '/api/v1/owner/session', '/api/v1/owner/profile', '/api/v1/owner/website'].includes(route) ||
-      /^\/api\/v1\/owner\/agencies\/[a-f0-9]{24}$/i.test(route))) ||
+  const allowed = (request.method === 'GET' && (['/api/v1/auth/csrf', '/api/v1/owner/session', '/api/v1/owner/profile', '/api/v1/owner/website', '/api/v1/owner/properties'].includes(route) ||
+      /^\/api\/v1\/owner\/(agencies|properties)\/[a-f0-9]{24}$/i.test(route))) ||
     (request.method === 'PUT' && (['/api/v1/owner/profile', '/api/v1/owner/website/theme', '/api/v1/owner/website/layout'].includes(route) ||
-      /^\/api\/v1\/owner\/website\/sections\/(header|hero|contact|about|services|whyChooseUs|team)$/.test(route))) ||
-    (request.method === 'POST' && ['/api/v1/owner/registrations', '/api/v1/owner/sessions', '/api/v1/auth/recovery/complete', '/api/v1/owner/review-resubmissions', '/api/v1/owner/website/publish'].includes(route)) ||
+      /^\/api\/v1\/owner\/website\/sections\/(header|hero|contact|about|services|whyChooseUs|team|properties)$/.test(route) ||
+      /^\/api\/v1\/owner\/properties\/[a-f0-9]{24}$/i.test(route))) ||
+    (request.method === 'POST' && (['/api/v1/owner/registrations', '/api/v1/owner/sessions', '/api/v1/auth/recovery/complete', '/api/v1/owner/review-resubmissions', '/api/v1/owner/website/publish', '/api/v1/owner/properties'].includes(route) ||
+      /^\/api\/v1\/owner\/properties\/[a-f0-9]{24}\/(archive|restore)$/i.test(route))) ||
     (request.method === 'DELETE' && route === '/api/v1/owner/session');
   if (!allowed) return NextResponse.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, { status: 404 });
   const unsafe = !['GET', 'HEAD', 'OPTIONS'].includes(request.method);

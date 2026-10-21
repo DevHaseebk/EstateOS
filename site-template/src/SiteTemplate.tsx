@@ -1,16 +1,45 @@
 import { SiteIconGlyph } from './icons';
+import { formatPrice, INTENT_LABELS, PROPERTY_TYPE_LABELS, propertyFacts } from './property';
 import type { OptionalBlock, SiteModel } from './types';
 
-const NAV_LABELS: Record<OptionalBlock['key'], string> = { about: 'About', services: 'Services', whyChooseUs: 'Why us', team: 'Team' };
+const NAV_LABELS: Record<OptionalBlock['key'], string> = { about: 'About', services: 'Services', whyChooseUs: 'Why us', team: 'Team', properties: 'Properties' };
+
+/** D-080: enquiries go to the agency's public WhatsApp (with a short message) or phone. No inquiry form in the pilot. */
+function enquiryLink(title: string, location: string, contacts: SiteModel['contacts']): { href: string; external: boolean } | null {
+  if (contacts.whatsapp) {
+    const text = `Hi, I am interested in "${title}" (${location}).`;
+    return { href: `${whatsappHref(contacts.whatsapp)}?text=${encodeURIComponent(text)}`, external: true };
+  }
+  return contacts.phone ? { href: phoneHref(contacts.phone), external: false } : null;
+}
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]!.toUpperCase()).join('');
 
 /** Phase 3c optional sections (D-032). Only blocks that are shown and have content ever reach here. */
-function OptionalSectionView({ block }: { block: OptionalBlock }) {
+function OptionalSectionView({ block, contacts }: { block: OptionalBlock; contacts: SiteModel['contacts'] }) {
   const titleId = `est-${block.key}-title`;
   return <section className={`est-section est-optional est-${block.key}`} id={block.key} aria-labelledby={titleId}>
     <div className="est-container">
       <h2 id={titleId} className="est-h2">{block.heading}</h2>
       {block.key === 'about' && <p className="est-about-story">{block.story}</p>}
+      {block.key === 'properties' && <ul className="est-card-grid">
+        {block.items.map((property) => {
+          const location = `${property.area}, ${property.city}`;
+          const enquiry = enquiryLink(property.title, location, contacts);
+          const facts = propertyFacts(property);
+          return <li key={property.key} className="est-card est-property">
+            <div className="est-property-visual" aria-hidden="true"><SiteIconGlyph icon={property.type === 'PLOT' ? 'map-pin' : property.type === 'SHOP' || property.type === 'OFFICE' ? 'building' : 'home'} /></div>
+            <div className="est-property-body">
+              <p className="est-property-meta"><span className="est-pill">{INTENT_LABELS[property.intent]}</span> {PROPERTY_TYPE_LABELS[property.type]}</p>
+              <h3 className="est-h3">{property.title}</h3>
+              <p className="est-muted">{location}</p>
+              {facts && <p className="est-muted">{facts}</p>}
+              <p className="est-price">{formatPrice(property.pricePkr, property.intent)}</p>
+              {enquiry && <a className="est-button est-button-small" href={enquiry.href} {...(enquiry.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                Enquire<span className="est-visually-hidden"> about {property.title}</span></a>}
+            </div>
+          </li>;
+        })}
+      </ul>}
       {(block.key === 'services' || block.key === 'whyChooseUs') && <ul className="est-card-grid">
         {block.cards.map((card, index) => <li key={`${card.title}-${index}`} className="est-card est-feature">
           <span className="est-icon"><SiteIconGlyph icon={card.icon} /></span>
@@ -87,7 +116,7 @@ export function SiteTemplate({ model }: { model: SiteModel }) {
         </div>
       </section>
 
-      {model.optional.map((block) => <OptionalSectionView key={block.key} block={block} />)}
+      {model.optional.map((block) => <OptionalSectionView key={block.key} block={block} contacts={model.contacts} />)}
 
       <section className="est-section" id="contact" aria-labelledby="est-contact-title">
         <div className="est-container">
