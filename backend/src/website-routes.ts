@@ -3,9 +3,9 @@ import { ZodError } from 'zod';
 import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requireOwnerWritable, requirePortal, type AuthRequest } from './auth.js';
 import { Agency, WebsiteDraft } from './models.js';
 import { ownerCanEdit, ReviewError } from './review.js';
-import { afterReadinessChange, ownerPublicationView } from './publication.js';
+import { afterReadinessChange, livePublicationDetails, ownerPublicationView, publishUpdates } from './publication.js';
 import { ownerScope, superAdminScope, tenantAgencyFilter } from './tenant.js';
-import { layoutSchema, sectionSchemas, themeSchema } from './validation.js';
+import { layoutSchema, publishSchema, sectionSchemas, themeSchema } from './validation.js';
 import {
   ensureDraft, hasMinimumContent, layoutView, licensedHeroDefaults, OPTIONAL_KEYS, readinessView, sectionView, virtualDraft, websiteView,
   type DraftFields, type OptionalKey,
@@ -100,7 +100,29 @@ router.get('/owner/website', asyncRoute(async (request, response) => {
   const context = await currentSession(request);
   const agency = await Agency.findOne(tenantAgencyFilter(ownerScope(context!.user))).lean();
   if (!agency) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');
-  response.json({ data: { ...websiteView(agency, await ensureDraft(agency)), publication: ownerPublicationView(agency) } });
+  const draft = await ensureDraft(agency);
+  response.json({ data: { ...websiteView(agency, draft), publication: { ...ownerPublicationView(agency), ...await livePublicationDetails(agency, draft) } } });
+}));
+
+// Phase 4b: deliberate owner Publish updates for an already-Live website (D-053). Never a first-Live gate (D-029).
+router.post('/owner/website/publish', asyncRoute(async (request, response) => {
+  requirePortal(request, 'OWNER');
+  await requireCsrf(request, true);
+  requireOwnerWritable(request);
+  rejectAgencyInput(request);
+  const input = publishSchema.parse(request.body);
+  const scope = ownerScope(request.sessionContext!.user);
+  const result = await publishUpdates({ agencyId: scope.agencyId, ownerUserId: scope.userId, ...input });
+  if (result.kind === 'NOT_READY') {
+    response.status(422).json({ error: {
+      code: 'NOT_READY', message: 'Your website is missing essentials, so it cannot be published. Your live website is unchanged.',
+      details: Object.fromEntries(result.issues.map((issue) => [issue.key, issue.message])),
+    } });
+    return;
+  }
+  const agency = await Agency.findOne(tenantAgencyFilter(scope)).lean();
+  const draft = await WebsiteDraft.findOne({ agencyId: scope.agencyId }).lean();
+  response.json({ data: { publication: { ...ownerPublicationView(agency!), ...await livePublicationDetails(agency!, draft) } } });
 }));
 
 router.put('/owner/website/theme', asyncRoute(async (request, response) => {

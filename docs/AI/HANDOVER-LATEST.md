@@ -1,3 +1,45 @@
+# EstateOS — Phase 4b Publish Updates: implemented and verified by Claude (2026-10-22)
+
+## Current task
+- Contract: `docs/PHASE-4B-PUBLISH-UPDATES-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 7 confirmations.
+- Git: branch `master`, HEAD `5dd1a19` (pushed). **All Phase 4b work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-053, D-054, D-063 (website part), D-079, D-087, D-089, D-090, D-092, D-102, D-107, D-110, D-115.
+
+## Work completed
+- **Backend**
+  - `models.ts`: `PublishedRevision` adds `reason PUBLISH_UPDATES`, `requestId` (unique partial `(agencyId, requestId)`) and `contentHash`; the audit adds `WEBSITE_PUBLISH_UPDATES`.
+  - `publication.ts`:
+    - `snapshotFromDraft` (shared with first activation); `contentFingerprint` (sha256 of canonical JSON without `version` keys);
+    - `livePublicationDetails` (liveRevision, publishedAt, unpublishedChanges);
+    - `publishUpdates`, in one transaction: replay by requestId → LIVE check → edit rule → expected revision → readiness (NOT_READY result) → nothing to publish → insert n+1 → compare-and-swap pointer → audit. A duplicate-key race resolves to the same result; any other error gives 503 `PUBLISH_FAILED` with nothing changed.
+  - `website-routes.ts`: `POST /owner/website/publish` (422 `NOT_READY` with an issue map). The owner website GET and the Super Admin detail include the Live details.
+  - `validation.ts`: `publishSchema` (`expectedLiveRevision` ≥ 1, `requestId` as a UUID).
+- **BFF (owner)**: `POST /owner/website/publish`.
+- **Agency Admin**:
+  - `PublishDialog` (confirmation; the requestId is kept until success, so "Try again" reuses it);
+  - hub: an Unpublished changes badge, with Publish updates as the main action only when there are changes, plus Preview;
+  - `websiteStatus` hint (up to date / unsaved-to-live);
+  - post-Live notes on the editor and theme pages.
+- **Super Admin**: "Live revision N, published …, Unpublished changes: yes/no"; a history label for publish.
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (5 workspaces) → exit 0.
+- `npm test -w backend` → **99/99** (new `publish.test.ts`, 9 tests; `bff.test.ts` +1; the 4a publication-shape assertion was updated for the new fields).
+- HTTPS end-to-end check on the 4a synthetic agency (backend temporarily on the photo fixture, then restarted normally):
+  - unpublishedChanges was true (from the 4a private edit);
+  - publish → revision 2, and the public page shows the new heading;
+  - the same requestId → 200 with no duplicate; then `NOTHING_TO_PUBLISH`; a stale revision → `PUBLISH_CONFLICT`;
+  - the Super Admin detail shows rev 2 and the history.
+- The synthetic owner's password was reset through the audited support-reset CLI and stored in the gitignored `backend/.env.e2e-live-dev.local`.
+- Not verified: a visual click-through in a browser.
+
+## Handoff
+- Owner action still open: licensed Hero photos.
+- Next: 3d (uploads; needs a storage account) or 5 (Properties). Each needs a contract.
+- Preserve: publish only for Live sites (never a first-Live gate); the whole draft at once; requestId idempotency; revisions are append-only.
+
+---
+
 # EstateOS — Phase 4a automatic first Live and public website: implemented and verified by Claude (2026-10-22)
 
 ## Current task

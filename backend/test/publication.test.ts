@@ -126,7 +126,9 @@ test('a ready agency goes Live exactly once on Approve: revision, pointer, slug 
   assert.equal(audits[0]!.action, 'WEBSITE_FIRST_LIVE');
   assert.equal(audits[0]!.actorRole, 'SYSTEM');
   const site = (await authedGet('OWNER', owner.token, '/api/v1/owner/website')).body.data;
-  assert.deepEqual(site.publication, { status: 'LIVE', url: 'https://harbor-view-realty.sites.example.test', firstLiveAt: agency!.publication!.firstLiveAt!.toISOString() });
+  const firstLiveAt = agency!.publication!.firstLiveAt!.toISOString();
+  // Phase 4b adds liveRevision, publishedAt and unpublishedChanges for Live sites.
+  assert.deepEqual(site.publication, { status: 'LIVE', url: 'https://harbor-view-realty.sites.example.test', firstLiveAt, liveRevision: 1, publishedAt: firstLiveAt, unpublishedChanges: false });
   assert.equal(await publication.tryFirstActivation(owner.agencyId), 'ALREADY_LIVE');
   assert.equal(await revisionsOf(owner.agencyId), 1);
   const detail = (await authedGet('SUPER_ADMIN', superToken, `/api/v1/super-admin/agencies/${owner.agencyId}`)).body.data;

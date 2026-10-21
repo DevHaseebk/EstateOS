@@ -49,7 +49,7 @@ function Editor() {
   const current: EditorKey = SECTIONS.some((section) => section.key === requested) ? requested as EditorKey : 'hero';
   const open = (key: EditorKey) => guarded(() => router.replace(`/website/editor?section=${key}`));
   if (!website) return error ? <p className="form-error" role="alert">{error}</p> : <p role="status">Loading your website…</p>;
-  return <div className="editor-layout">
+  return <>{website.publication?.status === 'LIVE' && <p className="live-note">Saved changes stay private until you publish them from <Link href="/website">My Website</Link>.</p>}<div className="editor-layout">
     <nav className="section-list" aria-label="Website sections">
       {SECTIONS.map((section) => <button key={section.key} type="button" aria-current={current === section.key ? 'true' : undefined} onClick={() => open(section.key)}>
         <strong>{section.label}{section.optional && <span className={`shown-badge${website.layout.visible[section.optional] ? ' on' : ''}`}>{website.layout.visible[section.optional] ? 'Shown' : 'Hidden'}</span>}</strong>
@@ -65,7 +65,7 @@ function Editor() {
       {(current === 'services' || current === 'whyChooseUs') && <CardsForm key={current} website={website} sectionKey={current} onSaved={setWebsite} />}
       {current === 'team' && <TeamForm key="team" website={website} onSaved={setWebsite} />}
     </div>
-  </div>;
+  </div></>;
 }
 
 export default function EditorPage() {

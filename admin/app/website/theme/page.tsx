@@ -37,6 +37,7 @@ function ThemeSelection() {
 
   return <>
     {!website.canEdit && <p className="form-notice" role="status">Your website is view-only right now.</p>}
+    {website.publication?.status === 'LIVE' && <p className="live-note">An applied theme stays private until you publish it from <Link href="/website">My Website</Link>.</p>}
     <div className="theme-grid" role="radiogroup" aria-label="Website theme">
       {THEME_PRESETS.map((preset) => <button key={preset} type="button" role="radio" aria-checked={shown === preset}
         className={`theme-card theme-${preset.toLowerCase()}${shown === preset ? ' selected' : ''}`} onClick={() => { setCandidate(preset); setMessage(null); }}>

@@ -49,6 +49,7 @@ export const ACTION_LABELS: Record<string, string> = {
   RESTRICT_DEACTIVATE: 'Deactivated',
   RESTRICT_RESTORE: 'Restored',
   WEBSITE_FIRST_LIVE: 'Website went Live automatically',
+  WEBSITE_PUBLISH_UPDATES: 'Owner published website updates',
 };
 
 export const RESTRICTION_LABELS: Record<string, string> = {

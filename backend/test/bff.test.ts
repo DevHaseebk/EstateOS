@@ -197,3 +197,30 @@ test('Phase 3c optional section and layout routes are owner-only PUTs', async ()
     assert.equal(forwarded.length, forwardedCount);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Phase 4b publish route is an owner-only POST', async () => {
+  const originalFetch = globalThis.fetch;
+  const forwarded: string[] = [];
+  globalThis.fetch = async (input: string | URL | Request) => { forwarded.push(String(input)); return Response.json({ data: {} }); };
+  const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
+  try {
+    const ok = await owner.POST(new NextRequest('https://admin.estateos.localhost/api/v1/owner/website/publish', {
+      method: 'POST', headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['owner', 'website', 'publish']));
+    assert.equal(ok.status, 200);
+    const forwardedCount = forwarded.length;
+    const viaPut = await owner.PUT(new NextRequest('https://admin.estateos.localhost/api/v1/owner/website/publish', {
+      method: 'PUT', headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['owner', 'website', 'publish']));
+    assert.equal(viaPut.status, 404);
+    const viaSuper = await superAdmin.POST(new NextRequest('https://control.estateos.localhost/api/v1/owner/website/publish', {
+      method: 'POST', headers: { origin: 'https://control.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['owner', 'website', 'publish']));
+    assert.equal(viaSuper.status, 404);
+    const foreign = await owner.POST(new NextRequest('https://admin.estateos.localhost/api/v1/owner/website/publish', {
+      method: 'POST', headers: { origin: 'https://attacker.example', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['owner', 'website', 'publish']));
+    assert.equal(foreign.status, 403);
+    assert.equal(forwarded.length, forwardedCount);
+  } finally { globalThis.fetch = originalFetch; }
+});

@@ -22,7 +22,11 @@ export type WebsiteData = {
   heroDefaults: { id: string; label: string }[];
   canEdit: boolean;
   /** Phase 4a: truthful publication status; a URL only when actually Live. */
-  publication?: { status: 'NEVER_PUBLISHED' | 'ACTIVATION_PENDING' | 'LIVE'; url?: string; firstLiveAt?: string };
+  publication?: {
+    status: 'NEVER_PUBLISHED' | 'ACTIVATION_PENDING' | 'LIVE'; url?: string; firstLiveAt?: string;
+    /** Phase 4b (D-054): only for Live sites. */
+    liveRevision?: number; publishedAt?: string; unpublishedChanges?: boolean;
+  };
 };
 
 /** The renderable part of a website: the saved draft, or a frozen published revision (Phase 4a, D-090). */

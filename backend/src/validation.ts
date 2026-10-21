@@ -139,3 +139,9 @@ export const layoutSchema = z.strictObject({
   visible: z.strictObject({ about: z.boolean(), services: z.boolean(), whyChooseUs: z.boolean(), team: z.boolean() }),
   expectedLayoutVersion: z.number().int().min(0),
 });
+
+// Phase 4b §4: Publish updates carries the Live revision it expects and an idempotency key (D-087, D-107).
+export const publishSchema = z.strictObject({
+  expectedLiveRevision: z.number().int().min(1),
+  requestId: z.uuid('requestId must be a UUID'),
+});

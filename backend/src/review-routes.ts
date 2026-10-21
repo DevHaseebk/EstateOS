@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requireOwnerWritable, requirePortal, type AuthRequest } from './auth.js';
 import { Agency, AgencyAudit, REVIEW_STATUSES, User, WebsiteDraft } from './models.js';
 import { profileDetails, publicContactView } from './profile-routes.js';
-import { adminPublicationView, afterReadinessChange, publicUrl } from './publication.js';
+import { adminPublicationView, afterReadinessChange, livePublicationDetails, publicUrl } from './publication.js';
 import { applyRestrictionTransition, restrictionView } from './restriction.js';
 import { getReadinessIssues, licensedHeroDefaults, virtualDraft } from './website.js';
 import { applyReviewTransition, ownerReviewView, reviewView } from './review.js';
@@ -116,7 +116,8 @@ router.get('/super-admin/agencies/:agencyId', asyncRoute(async (request, respons
   if (!agency) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');
   const owner = await User.findOne({ role: 'AGENCY_OWNER', agencyId: agency._id }).select('name emailNormalized').lean();
   const history = await AgencyAudit.find({ agencyId: agency._id }).sort({ at: -1 }).limit(50).lean();
-  const readinessIssues = getReadinessIssues(await WebsiteDraft.findOne({ agencyId: agency._id }).lean() ?? virtualDraft(agency));
+  const draft = await WebsiteDraft.findOne({ agencyId: agency._id }).lean();
+  const readinessIssues = getReadinessIssues(draft ?? virtualDraft(agency));
   response.json({ data: {
     id: String(agency._id),
     agencyName: agency.name,
@@ -130,7 +131,7 @@ router.get('/super-admin/agencies/:agencyId', asyncRoute(async (request, respons
     websiteReadiness: readinessIssues.length ? 'NOT_READY' : 'READY',
     readinessIssues,
     publicationStatus: agency.publicationStatus ?? 'NEVER_PUBLISHED',
-    publication: adminPublicationView(agency),
+    publication: { ...adminPublicationView(agency), ...await livePublicationDetails(agency, draft) },
     history: history.map((entry) => ({
       at: entry.at, axis: entry.axis ?? 'REVIEW', action: entry.action, actorRole: entry.actorRole, fromStatus: entry.fromStatus, toStatus: entry.toStatus,
       ...(entry.reason ? { reason: entry.reason } : {}),

@@ -12,7 +12,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
       /^\/api\/v1\/owner\/agencies\/[a-f0-9]{24}$/i.test(route))) ||
     (request.method === 'PUT' && (['/api/v1/owner/profile', '/api/v1/owner/website/theme', '/api/v1/owner/website/layout'].includes(route) ||
       /^\/api\/v1\/owner\/website\/sections\/(header|hero|contact|about|services|whyChooseUs|team)$/.test(route))) ||
-    (request.method === 'POST' && ['/api/v1/owner/registrations', '/api/v1/owner/sessions', '/api/v1/auth/recovery/complete', '/api/v1/owner/review-resubmissions'].includes(route)) ||
+    (request.method === 'POST' && ['/api/v1/owner/registrations', '/api/v1/owner/sessions', '/api/v1/auth/recovery/complete', '/api/v1/owner/review-resubmissions', '/api/v1/owner/website/publish'].includes(route)) ||
     (request.method === 'DELETE' && route === '/api/v1/owner/session');
   if (!allowed) return NextResponse.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, { status: 404 });
   const unsafe = !['GET', 'HEAD', 'OPTIONS'].includes(request.method);

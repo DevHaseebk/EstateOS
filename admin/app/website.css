@@ -82,3 +82,9 @@ select { width: 100%; box-sizing: border-box; min-height: 46px; padding: .6rem .
   .editor-layout { grid-template-columns: 1fr; }
   .section-list { position: static; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 }
+
+/* Phase 4b: Unpublished changes and Publish updates (D-054). */
+.unpublished-badge { display: inline-block; margin-left: .6rem; padding: .15rem .6rem; border-radius: 999px; background: #fff4d6; color: #6b4b00; font-size: .8rem; font-weight: 700; vertical-align: middle; }
+button.primary-link { border: 0; cursor: pointer; font: inherit; font-weight: 700; }
+.secondary-action { margin-left: 1rem; }
+.live-note { margin: -.5rem 0 1rem; padding: .6rem .9rem; border-left: 3px solid #126d59; background: #e8f2ed; border-radius: 6px; }

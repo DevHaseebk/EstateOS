@@ -127,7 +127,7 @@ const agencyAuditSchema = new Schema({
   axis: { type: String, enum: ['REVIEW', 'RESTRICTION', 'PUBLICATION'], required: true, default: 'REVIEW', immutable: true },
   action: {
     type: String, required: true, immutable: true,
-    enum: ['REVIEW_APPROVE', 'REVIEW_REQUEST_CHANGES', 'REVIEW_REJECT', 'REVIEW_REOPEN', 'OWNER_RESUBMIT', 'RESTRICT_BLOCK', 'RESTRICT_DEACTIVATE', 'RESTRICT_RESTORE', 'WEBSITE_FIRST_LIVE'],
+    enum: ['REVIEW_APPROVE', 'REVIEW_REQUEST_CHANGES', 'REVIEW_REJECT', 'REVIEW_REOPEN', 'OWNER_RESUBMIT', 'RESTRICT_BLOCK', 'RESTRICT_DEACTIVATE', 'RESTRICT_RESTORE', 'WEBSITE_FIRST_LIVE', 'WEBSITE_PUBLISH_UPDATES'],
   },
   fromStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES, ...PUBLICATION_STATUSES], required: true, immutable: true },
   toStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES, ...PUBLICATION_STATUSES], required: true, immutable: true },
@@ -248,10 +248,14 @@ const publishedRevisionSchema = new Schema({
   revision: { type: Number, required: true, immutable: true },
   slug: { type: String, required: true, immutable: true },
   site: { type: Schema.Types.Mixed, required: true, immutable: true },
-  reason: { type: String, enum: ['FIRST_ACTIVATION'], required: true, immutable: true },
+  reason: { type: String, enum: ['FIRST_ACTIVATION', 'PUBLISH_UPDATES'], required: true, immutable: true },
+  // Phase 4b (D-087, D-107): the owner's idempotency key and the content fingerprint used for "Unpublished changes".
+  requestId: { type: String, immutable: true },
+  contentHash: { type: String, immutable: true },
   createdAt: { type: Date, required: true, default: Date.now, immutable: true },
 }, { versionKey: false, minimize: false });
 publishedRevisionSchema.index({ agencyId: 1, revision: 1 }, { unique: true });
+publishedRevisionSchema.index({ agencyId: 1, requestId: 1 }, { unique: true, partialFilterExpression: { requestId: { $type: 'string' } } });
 for (const operation of ['updateOne', 'updateMany', 'findOneAndUpdate', 'replaceOne', 'findOneAndReplace', 'deleteOne', 'deleteMany', 'findOneAndDelete'] as const) {
   publishedRevisionSchema.pre(operation, () => { throw new Error('REVISION_APPEND_ONLY'); });
 }

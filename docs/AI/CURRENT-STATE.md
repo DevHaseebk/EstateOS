@@ -69,6 +69,13 @@ Phase 4 is split: 4a automatic first Live and public site; 4b Publish Updates. T
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 89/89; the HTTPS end-to-end check passed.
 - One synthetic agency (`e2e-synthetic-homes-1792610312`) is Live in the dev DB, as approved.
 
+## Phase 4b status (2026-10-22)
+
+The Phase 4b contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-4B-PUBLISH-UPDATES-CONTRACT-APPROVED.md`.
+
+- Built: owner Publish updates (whole saved draft becomes revision n+1, compare-and-swap pointer, idempotent request id, truthful 503); an `unpublishedChanges` content fingerprint; hub badge, confirmation dialog and Try again; post-Live notes; Super Admin revision info.
+- Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 99/99; the HTTPS end-to-end check passed on the synthetic Live agency (now revision 2).
+
 ## Next gate (written before Phase 1; kept for history)
 
 Review actual repo/active Git diff; reconcile AI setup; document Phase 1 exact server session/CSRF/dev host, agency/user/session bootstrap/recovery, tenant-scoping and versioned auth API contracts with tests. Obtain explicit owner approval **before auth/tenant business code**. Suggested prompt: `docs/AI/PHASE-1-AUTH-TENANT-CODEX-PROMPT.md`.

@@ -1,7 +1,9 @@
+import { createHash } from 'node:crypto';
 import mongoose, { type Types } from 'mongoose';
 import { env } from './config/env.js';
 import { Agency, AgencyAudit, PublishedRevision, WebsiteDraft } from './models.js';
-import { getReadinessIssues, websiteView } from './website.js';
+import { ownerCanEdit, ReviewError } from './review.js';
+import { getReadinessIssues, websiteView, type DraftFields, type ReadinessIssue } from './website.js';
 
 // Phase 4a automatic first Live (docs/PHASE-4A-FIRST-LIVE-CONTRACT-APPROVED.md): D-029, D-077, D-082, D-090, D-091, D-119.
 
@@ -54,6 +56,102 @@ export function adminPublicationView(agency: PublicationFields) {
   };
 }
 
+type SnapshotAgency = Parameters<typeof websiteView>[0];
+/** The public material of one revision (D-090): exactly what the template renders. Properties arrive in Phase 5. */
+export function snapshotFromDraft(agency: SnapshotAgency, draft: DraftFields) {
+  const view = websiteView(agency, draft, false);
+  return { theme: view.theme, sections: view.sections, layout: view.layout, mapped: view.mapped, properties: [] as unknown[] };
+}
+
+/** Recursively drops internal `version` counters and sorts keys, so identical content always gives the same text. */
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    return Object.fromEntries(Object.keys(value).filter((key) => key !== 'version').sort()
+      .map((key) => [key, canonical((value as Record<string, unknown>)[key])]).filter(([, entry]) => entry !== undefined));
+  }
+  return value;
+}
+/** Phase 4b §1 Q3: content fingerprint for "Unpublished changes". Saving identical text again never counts as a change. */
+export function contentFingerprint(site: unknown): string {
+  return createHash('sha256').update(JSON.stringify(canonical(site))).digest('hex');
+}
+
+type LiveAgency = SnapshotAgency & { publicationStatus?: string | null; publication?: { liveRevisionId?: Types.ObjectId | null } | null };
+/** Live revision number, publish date and whether the saved draft really differs from it (D-054). Only for Live agencies. */
+export async function livePublicationDetails(agency: LiveAgency, draft: DraftFields | null) {
+  if (agency.publicationStatus !== 'LIVE' || !agency.publication?.liveRevisionId) return {};
+  const live = await PublishedRevision.findById(agency.publication.liveRevisionId).select('revision createdAt contentHash site').lean();
+  if (!live) return {};
+  const liveHash = live.contentHash ?? contentFingerprint(live.site);
+  const unpublishedChanges = draft ? contentFingerprint(snapshotFromDraft(agency, draft)) !== liveHash : false;
+  return { liveRevision: live.revision, publishedAt: live.createdAt, unpublishedChanges };
+}
+
+export type PublishResult = { kind: 'PUBLISHED'; revision: number } | { kind: 'NOT_READY'; issues: ReadinessIssue[] };
+const conflict = () => new ReviewError(409, 'PUBLISH_CONFLICT', 'Your website was updated in another window. Reload to see the latest version.');
+
+/**
+ * Phase 4b §3: Publish updates. The whole saved draft becomes revision n+1; the pointer moves by compare-and-swap,
+ * all in one transaction with the audit entry. The same requestId never publishes twice (D-087, D-107).
+ * On any unexpected failure nothing changes: the Live revision and the saved draft both stay as they were.
+ */
+export async function publishUpdates(input: { agencyId: string; ownerUserId: string; expectedLiveRevision: number; requestId: string }): Promise<PublishResult> {
+  try {
+    let outcome: PublishResult | undefined;
+    await mongoose.connection.transaction(async (session) => {
+      const replay = await PublishedRevision.findOne({ agencyId: input.agencyId, requestId: input.requestId }).session(session).select('revision').lean();
+      if (replay) { outcome = { kind: 'PUBLISHED', revision: replay.revision }; return; }
+      const agency = await Agency.findById(input.agencyId).session(session).lean();
+      if (!agency) throw new ReviewError(404, 'NOT_FOUND', 'Agency not found');
+      if (agency.publicationStatus !== 'LIVE' || !agency.publication?.liveRevisionId || !agency.publication.slug) {
+        throw new ReviewError(409, 'NOT_LIVE', 'Your website is not live yet. It goes live automatically once it is approved and ready.');
+      }
+      if (!ownerCanEdit(agency)) {
+        if ((agency.restrictionStatus ?? 'NONE') === 'DEACTIVATED') throw new ReviewError(403, 'AGENCY_DEACTIVATED', 'Your agency account is deactivated. Contact EstateOS support.');
+        throw new ReviewError(403, 'WEBSITE_READ_ONLY', 'Your website can no longer be changed. Contact EstateOS support.');
+      }
+      const live = await PublishedRevision.findById(agency.publication.liveRevisionId).session(session).lean();
+      if (!live || live.revision !== input.expectedLiveRevision) throw conflict();
+      const draft = await WebsiteDraft.findOne({ agencyId: agency._id }).session(session).lean();
+      const issues = draft ? getReadinessIssues(draft) : [];
+      if (!draft || issues.length) { outcome = { kind: 'NOT_READY', issues }; return; }
+      const site = snapshotFromDraft(agency, draft);
+      const contentHash = contentFingerprint(site);
+      if (contentHash === (live.contentHash ?? contentFingerprint(live.site))) {
+        throw new ReviewError(409, 'NOTHING_TO_PUBLISH', 'There are no saved changes to publish.');
+      }
+      const now = new Date();
+      const [revision] = await PublishedRevision.create([{
+        agencyId: agency._id, revision: live.revision + 1, slug: agency.publication.slug, site, reason: 'PUBLISH_UPDATES',
+        requestId: input.requestId, contentHash, createdAt: now,
+      }], { session });
+      const swapped = await Agency.updateOne(
+        { _id: agency._id, publicationStatus: 'LIVE', restrictionStatus: 'NONE', 'publication.liveRevisionId': live._id },
+        { $set: { 'publication.liveRevisionId': revision!._id } },
+        { session },
+      );
+      if (swapped.modifiedCount !== 1) throw conflict();
+      await AgencyAudit.create([{
+        at: now, agencyId: agency._id, actorUserId: input.ownerUserId, actorRole: 'AGENCY_OWNER', axis: 'PUBLICATION',
+        action: 'WEBSITE_PUBLISH_UPDATES', fromStatus: 'LIVE', toStatus: 'LIVE', requestId: input.requestId,
+      }], { session });
+      outcome = { kind: 'PUBLISHED', revision: revision!.revision };
+    });
+    return outcome!;
+  } catch (error) {
+    if (error instanceof ReviewError) throw error;
+    // A concurrent publish with the same requestId won the race: that is the same publication, not a failure.
+    if (error instanceof mongoose.mongo.MongoServerError && error.code === 11000) {
+      const replay = await PublishedRevision.findOne({ agencyId: input.agencyId, requestId: input.requestId }).select('revision').lean();
+      if (replay) return { kind: 'PUBLISHED', revision: replay.revision };
+      throw conflict();
+    }
+    console.error(`[publish] agency=${input.agencyId} failed code=${error instanceof Error ? error.message.slice(0, 60) : 'UNKNOWN'}`);
+    throw new ReviewError(503, 'PUBLISH_FAILED', 'Publishing failed. Your live website and saved changes are unchanged. Please try again.');
+  }
+}
+
 export type ActivationResult = 'LIVE' | 'ALREADY_LIVE' | 'NOT_ELIGIBLE' | 'FAILED';
 class NotEligible extends Error {}
 
@@ -79,10 +177,9 @@ export async function tryFirstActivation(agencyId: Types.ObjectId | string): Pro
         const draft = await WebsiteDraft.findOne({ agencyId: agency._id }).session(session).lean();
         if (!current || current.publicationStatus === 'LIVE' || !eligible(current, draft)) throw new NotEligible();
         const slug = current.publication?.slug ?? await pickSlug(current.name, session);
-        const view = websiteView(current, draft!, false);
-        const site = { theme: view.theme, sections: view.sections, layout: view.layout, mapped: view.mapped, properties: [] };
+        const site = snapshotFromDraft(current, draft!);
         const now = new Date();
-        const [revision] = await PublishedRevision.create([{ agencyId: current._id, revision: 1, slug, site, reason: 'FIRST_ACTIVATION', createdAt: now }], { session });
+        const [revision] = await PublishedRevision.create([{ agencyId: current._id, revision: 1, slug, site, reason: 'FIRST_ACTIVATION', contentHash: contentFingerprint(site), createdAt: now }], { session });
         const fromStatus = current.publicationStatus ?? 'NEVER_PUBLISHED';
         const result = await Agency.updateOne(
           { _id: current._id, publicationStatus: { $in: ['NEVER_PUBLISHED', 'ACTIVATION_PENDING'] }, reviewStatus: 'APPROVED', restrictionStatus: 'NONE' },

@@ -20,7 +20,10 @@ type Detail = {
   websiteReadiness: string;
   readinessIssues: { key: string; message: string }[];
   publicationStatus: string;
-  publication: { status: string; url?: string; firstLiveAt?: string; lastActivationError?: { code: string; at: string }; activationAttempts: number };
+  publication: {
+    status: string; url?: string; firstLiveAt?: string; lastActivationError?: { code: string; at: string }; activationAttempts: number;
+    liveRevision?: number; publishedAt?: string; unpublishedChanges?: boolean;
+  };
   history: { at: string; axis: string; action: string; actorRole: string; fromStatus: string; toStatus: string; reason?: string }[];
 };
 type Session = { user: { name: string } };
@@ -117,6 +120,7 @@ export default function AgencyReviewPage() {
           </div>
           {detail.publication.url && <p>Public website: <a href={detail.publication.url} target="_blank" rel="noopener noreferrer" className="back-link">{detail.publication.url.replace('https://', '')}</a>
             {detail.publication.firstLiveAt && <span className="queue-meta"> · Live since {formatDate(detail.publication.firstLiveAt)}</span>}</p>}
+          {detail.publication.liveRevision && <p className="queue-meta">Live revision {detail.publication.liveRevision}, published {formatDate(detail.publication.publishedAt)} · Unpublished changes: {detail.publication.unpublishedChanges ? 'yes' : 'no'}</p>}
           {detail.publication.lastActivationError && detail.publication.status !== 'LIVE' && <div className="latest-reason">
             <p className="eyebrow">Automatic go-live failed — retrying</p>
             <p>Error {detail.publication.lastActivationError.code} at {formatDate(detail.publication.lastActivationError.at)} · attempts: {detail.publication.activationAttempts}</p>
