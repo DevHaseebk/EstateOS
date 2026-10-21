@@ -10,7 +10,7 @@ Git + Markdown files + actual repository state. Chat context is advisory, not au
 1. Check Git status and current branch; identify any uncommitted changes.
 2. Read `AGENTS.md`, `docs/AI/CURRENT-STATE.md`, `docs/DECISIONS.md`, `docs/AI/HANDOVER-LATEST.md` and relevant milestone spec.
 3. Restate **confirmed** scope, active milestone, precise task, affected paths and acceptance checks.
-4. Do **not** start implementation in PLANNING ONLY mode or outside approved scope.
+4. Work only within the current owner-approved scope. Phase 0.5 verification, minor foundation fixes, documentation reconciliation and a local commit are authorized; business features are not.
 
 ## Execution protocol (when approved later)
 1. Plan before changes, one small task at a time.
@@ -18,7 +18,7 @@ Git + Markdown files + actual repository state. Chat context is advisory, not au
 3. Reuse shared components; keep business logic out of UI when appropriate.
 4. Verify actual relevant checks: typecheck, lint, tests, build; report failures honestly.
 5. Report files touched and any changes to assumptions.
-6. Prefer frequent reviewable Git commits **with user approval for commit/push policy**; never overwrite another agent's uncommitted edits.
+6. Make reviewable local commits when the owner has authorized them. Never push without explicit owner permission or overwrite another agent's uncommitted edits.
 
 ## Handover protocol — required after each unit, and before planned assistant switch
 Update `docs/AI/CURRENT-STATE.md` and `docs/AI/HANDOVER-LATEST.md`:

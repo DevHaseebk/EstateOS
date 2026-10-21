@@ -4,13 +4,13 @@
 
 | Decision | Confirmed policy | Canonical spec |
 |---|---|---|
-| **D-081** | **CONFIRMED — A:** Dedicated admin-host session boundaries | `docs/IMPLEMENTATION-READINESS-081-CONFIRMED.md` |
-| **D-082** | **CONFIRMED — A:** Fixed public subdomains for pilot | `docs/IMPLEMENTATION-READINESS-082-CONFIRMED.md` |
-| **D-083** | **CONFIRMED — A:** Blocked / Deactivated sites non-public | `docs/IMPLEMENTATION-READINESS-083-CONFIRMED.md` |
-| **D-084** | **CONFIRMED — A:** Eligible saved properties in first auto-Live snapshot | `docs/IMPLEMENTATION-READINESS-084-CONFIRMED.md` |
-| **D-085** | **CONFIRMED — A:** Agency Profile stages mapped public draft fields | `docs/IMPLEMENTATION-READINESS-085-CONFIRMED.md` |
-| **D-086** | **CONFIRMED — A:** Privacy-safe optimized property photos | `docs/IMPLEMENTATION-READINESS-086-CONFIRMED.md` |
-| **D-087** | **CONFIRMED — A:** Safe idempotent Publish Updates retry | `docs/IMPLEMENTATION-READINESS-087-CONFIRMED.md` |
+| **D-081** | **CONFIRMED — A:** Dedicated admin-host session boundaries | `docs/IMPLEMENTATION-READINESS-D081-CONFIRMED.md` |
+| **D-082** | **CONFIRMED — A:** Fixed public subdomains for pilot | `docs/IMPLEMENTATION-READINESS-D082-CONFIRMED.md` |
+| **D-083** | **CONFIRMED — A:** Blocked / Deactivated sites non-public | `docs/IMPLEMENTATION-READINESS-D083-CONFIRMED.md` |
+| **D-084** | **CONFIRMED — A:** Eligible saved properties in first auto-Live snapshot | `docs/IMPLEMENTATION-READINESS-D084-CONFIRMED.md` |
+| **D-085** | **CONFIRMED — A:** Agency Profile stages mapped public draft fields | `docs/IMPLEMENTATION-READINESS-D085-CONFIRMED.md` |
+| **D-086** | **CONFIRMED — A:** Privacy-safe optimized property photos | `docs/IMPLEMENTATION-READINESS-D086-CONFIRMED.md` |
+| **D-087** | **CONFIRMED — A:** Safe idempotent Publish Updates retry | `docs/IMPLEMENTATION-READINESS-D087-CONFIRMED.md` |
 
 **D-074–D-080** remain CONFIRMED Option A, and **D-088–D-094** are PROPOSED ONLY (not approved). D-022/D-028 manual lean signup, D-029/D-033/D-077 first auto-Live gate, D-053/D-063/D-079 deliberate post-Live atomic publishing, D-064–D-073 Super Admin and Phase 0 four root workspaces/ports unchanged. No code build can be inferred from this ZIP.
 

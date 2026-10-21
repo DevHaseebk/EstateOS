@@ -1,3 +1,25 @@
+# EstateOS — Phase 0.5 verified handover (current)
+
+**2026-10-21 | Codex | branch: master | starting commit: 3fe80da.** Owner authorized verification, minor foundation fixes, AI instruction reconciliation and a local commit. The existing root Git repository was clean at start and already had a remote. No Git initialization, remote change, nested repository or push was performed.
+
+## Verified foundation
+
+- Four root npm workspaces are present: frontend 4000, admin 4001, super-admin 4002 and backend 4003. Installed dependencies resolved with npm ls across the workspaces.
+- The shell's Node.js is v22.0.0, below the declared engine range (^20.19.0, ^22.13.0 or >=24). Verification used the available bundled Node.js v24.19.0 without changing the global Node selection.
+- Typecheck passed in backend, admin, super-admin and frontend. Lint passed in all four. Production build passed in all four (three Next.js placeholder sites and the TypeScript backend).
+- The built backend served GET /api/health on port 4003 with HTTP 200 and JSON {"status":"ok","database":"disconnected"} while MONGODB_URI was unset. This verifies the no-database health behavior, not a MongoDB connection.
+
+## Changes and boundaries
+
+- Reconciled AGENTS.md, CLAUDE.md, .cursor/rules/project.mdc and docs/AI/WORKFLOW.md with v5.8 and the owner's Phase 0.5 Git instructions. Historical decision specifications remain untouched.
+- Corrected seven broken D-081–D-087 canonical file links in docs/DECISIONS.md. Updated docs/AI/CURRENT-STATE.md and this handover to replace the stale "scaffold unverified" claim with actual results.
+- No authentication, tenant routing, business models, agency APIs, property CRUD or publishing implementation was added. D-088–D-094 remain proposed. Exact security, schema/API, publication, deployment and product details remain open as documented in docs/OPEN-QUESTIONS.md.
+- Before future checks on this machine, select a compatible Node version; the default v22.0.0 is insufficient. The next assistant should inspect Git status and this handover first. Do not push without explicit owner permission.
+
+---
+
+## Historical v5.8 planning handover below (pre-verification)
+
 # EstateOS — HANDOVER LATEST v5.8 (AUTHORITATIVE)
 
 **2026-10-21 | Scope:** owner explicitly confirmed D-081…D-087 Option A. v5.8 is complete planning archive and root-ready docs. This turn does not contain actual checked Codex-generated source, so Phase 0 completion/build tests NOT RUN/NOT VERIFIED. No product feature coding approved.

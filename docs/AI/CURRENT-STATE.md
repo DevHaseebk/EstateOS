@@ -1,6 +1,6 @@
 # EstateOS — CURRENT STATE v5.8 (AUTHORITATIVE)
 
-**Date: 2026-10-21. Status: active planning and read-only architecture review. Codex Phase 0 scaffold previously authorized; actual repository output and test status NOT verified. No feature coding authorization.**
+**Date: 2026-10-21. Status: planning plus owner-authorized Phase 0.5 foundation verification. The four-app root scaffold is present and its typecheck, lint, build and backend health checks have been verified; details are in `docs/AI/HANDOVER-LATEST.md`. No business-feature coding authorization.**
 
 ## Latest approvals: D-081 to D-087 all Option A CONFIRMED
 - **D-081:** CONFIRMED Option A: distinct role/portal session context and host-scoped management cookies; never broadly share admin session with tenant public subdomains. Backend validates role/tenant per request. Exact implementation OPEN: Exact cookie/domain topology, SameSite, CSRF, development localhost behavior, API cross-origin/session store/expiry/revocation and identity bridging remain OPEN.
@@ -16,12 +16,12 @@
 - First website goes Live **automatically** once Super Admin manual approval AND D-033 readiness both true; recheck after successfully saved relevant changes; zero properties valid. First snapshot includes eligible saved Available/non-Archived properties, if any. No owner initial Publish/Submit.
 - Existing Live site: saved edits (sections, theme, eligible properties, mapped profile data) are PRIVATE draft; deliberate owner Publish Updates atomically changes Live, otherwise old public version stays. Failed publish leaves old Live + private draft; allow safe idempotent retry.
 - Blocked/Deactivated public websites non-public subject to recheck when restored, independent of private draft/publish pathways. Exact admin-session restrictions TBD.
-- Pilot `frontend/` 4000, `admin/` 4001, `super-admin/` 4002, `backend/` 4003, root npm workspaces; no old pnpm apps/* scaffolding or product feature code permission.
+- Pilot `frontend/` 4000, `admin/` 4001, `super-admin/` 4002, `backend/` 4003, root npm workspaces; no old pnpm apps/* scaffolding or product feature code permission. Phase 0.5 owner authorization covers verification, minor foundation fixes, AI instruction/handover reconciliation and a local commit only. Do not push without explicit permission.
 - No new email/KYC/proof/map mandatory approval gate. D-022 reasons for Request Changes/Reject unchanged. CRM deferred; public WhatsApp/contact CTA remains.
 
 ## Read next
 
-`docs/PLANNING-INDEX-LOCKED-v5.8.md`; `docs/IMPLEMENTATION-READINESS-v5.8-CONFIRMED-MAP.md`; canonical D081–D087 docs; `docs/AI/HANDOVER-LATEST.md`; proposed-only D088–D094; safe copy guide and Claude read-only prompt. Historical sections below can still call past choices OPEN: they are not current.
+`docs/PLANNING-INDEX-LOCKED-v5.8.md`; `docs/IMPLEMENTATION-READINESS-v5.8-CONFIRMED-MAP.md`; canonical D081–D087 docs; `docs/AI/HANDOVER-LATEST.md`; proposed-only D088–D094. Historical sections below can still call past choices OPEN: they are not current.
 
 ---
 
