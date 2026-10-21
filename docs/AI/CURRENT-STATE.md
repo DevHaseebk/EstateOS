@@ -78,7 +78,7 @@ The Phase 4b contract is **APPROVED** (2026-10-22) and **implemented and verifie
 
 ## Phase 5a status (2026-10-22)
 
-The Phase 5a contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-5A-PROPERTIES-CONTRACT-APPROVED.md`.
+The Phase 5a contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude**, committed `200bf0b` and pushed: `docs/PHASE-5A-PROPERTIES-CONTRACT-APPROVED.md`.
 
 - Built: Property records (CRUD, availability rule, Archive/Restore, 200 active limit); the eligible list goes into revisions; a public Properties section with Enquire; Agency Admin list/form; Super Admin read-only list.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 111/111; server-render checks pass.

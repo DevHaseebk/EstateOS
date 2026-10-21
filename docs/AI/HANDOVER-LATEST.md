@@ -2,7 +2,7 @@
 
 ## Current task
 - Contract: `docs/PHASE-5A-PROPERTIES-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 6 confirmations.
-- Git: branch `master`, HEAD `3986c37` (pushed). **All Phase 5a work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Git: branch `master`, Phase 5a committed as `200bf0b` and pushed to `origin/master` on the owner's instruction.
 - Decisions: D-031, D-032, D-046, D-047, D-056–D-058, D-061–D-063, D-078, D-084, D-089, D-103, D-104, D-109, D-110, D-115.
 
 ## Work completed
