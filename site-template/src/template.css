@@ -1,0 +1,77 @@
+/*
+ * EstateOS shared agency website template (D-030). Everything is scoped under .est-site.
+ * Colours: D-042 (approved HEX). Fonts: D-039 via host-app variables --font-manrope / --font-playfair / --font-inter.
+ * Sizes, weights, spacing, overlay: Phase 3b contract §8. Geometry is identical across presets (D-038).
+ * Layout responds to the template's own width (container queries; cqi = 1% of its width), so a 390px preview
+ * behaves like a phone. Breakpoints follow Tailwind md 768px / lg 1024px (D-109).
+ */
+.est-site {
+  container-type: inline-size;
+  --est-heading-font: var(--font-manrope), 'Segoe UI', Arial, sans-serif;
+  --est-body-font: var(--font-inter), 'Segoe UI', Arial, sans-serif;
+  --est-heading-weight: 700;
+  --est-radius-card: 12px;
+  --est-radius-button: 10px;
+}
+.est-site[data-theme='MODERN_LIGHT'] { --est-bg: #F7F8F6; --est-surface: #FFFFFF; --est-text: #222C31; --est-accent: #365D6A; --est-on-accent: #FFFFFF; }
+.est-site[data-theme='WARM_EDITORIAL'] {
+  --est-bg: #F8F2E9; --est-surface: #FFFDF8; --est-text: #3C3029; --est-accent: #775639; --est-on-accent: #FFFFFF;
+  --est-heading-font: var(--font-playfair), Georgia, serif;
+  --est-heading-weight: 600;
+}
+.est-site[data-theme='CONTEMPORARY_DARK'] { --est-bg: #171B1D; --est-surface: #24292C; --est-text: #F4F1EB; --est-accent: #C6AA7A; --est-on-accent: #171B1D; }
+
+.est-page { background: var(--est-bg); color: var(--est-text); font-family: var(--est-body-font); font-size: 1rem; line-height: 1.6; }
+.est-page *, .est-page *::before, .est-page *::after { box-sizing: border-box; }
+.est-page a { color: inherit; }
+.est-page a:focus-visible { outline: 3px solid var(--est-accent); outline-offset: 3px; }
+.est-container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.est-muted { color: color-mix(in srgb, var(--est-text) 72%, transparent); }
+.est-label { display: block; font-size: .85rem; font-weight: 600; color: color-mix(in srgb, var(--est-text) 72%, transparent); }
+
+.est-button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 1.4rem; border-radius: var(--est-radius-button); background: var(--est-accent); color: var(--est-on-accent) !important; font-weight: 600; text-decoration: none; }
+.est-button:hover { filter: brightness(1.08); }
+.est-button-small { min-height: 44px; padding: 0 1.1rem; }
+
+.est-header { background: var(--est-surface); border-bottom: 1px solid color-mix(in srgb, var(--est-text) 12%, transparent); }
+.est-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 72px; }
+.est-brand { margin: 0; font-family: var(--est-heading-font); font-weight: var(--est-heading-weight); font-size: 1.25rem; line-height: 1.2; overflow-wrap: anywhere; }
+
+.est-hero { position: relative; display: flex; align-items: flex-end; min-height: 80vh; background-color: #2B3236; background-size: cover; background-position: center; color: #FFFFFF; }
+.est-hero-no-image { background-image: linear-gradient(135deg, #2B3236, #3E4A50); }
+/* D-043: directional dark gradient behind the text only, not a uniform scrim. Mobile: bottom to top. */
+.est-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 12, 14, .72) 0%, rgba(10, 12, 14, .35) 55%, rgba(10, 12, 14, 0) 80%); }
+.est-hero-content { position: relative; padding-top: 64px; padding-bottom: 64px; }
+.est-hero-title { margin: 0; max-width: 18ch; font-family: var(--est-heading-font); font-weight: var(--est-heading-weight); font-size: clamp(2.5rem, 1.6rem + 3.2cqi, 4.5rem); line-height: 1.1; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.est-hero-subtitle { margin: 1rem 0 0; max-width: 40ch; font-size: 1.125rem; line-height: 1.6; color: rgba(255, 255, 255, .9); }
+.est-button-on-image { margin-top: 1.75rem; }
+.est-button-on-image:focus-visible { outline-color: #FFFFFF !important; }
+
+.est-section { padding: 64px 0; }
+.est-h2 { margin: 0; font-family: var(--est-heading-font); font-weight: var(--est-heading-weight); font-size: clamp(1.75rem, 1.35rem + 1.4cqi, 2.75rem); line-height: 1.1; }
+.est-card { background: var(--est-surface); border-radius: var(--est-radius-card); padding: 28px 20px; border: 1px solid color-mix(in srgb, var(--est-text) 10%, transparent); }
+.est-contact-message { margin: .75rem 0 0; max-width: 60ch; white-space: pre-line; }
+.est-contact-list { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: 1rem; }
+.est-contact-list a, .est-contact-list span:not(.est-label) { font-size: 1.05rem; overflow-wrap: anywhere; }
+
+.est-footer { background: var(--est-surface); border-top: 1px solid color-mix(in srgb, var(--est-text) 12%, transparent); padding: 40px 0; }
+.est-footer-inner { display: grid; gap: 1.25rem; }
+.est-footer-inner p { margin: 0; }
+.est-footer-contacts { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+.est-footer-contacts a { min-height: 44px; display: inline-flex; align-items: center; }
+.est-copyright { font-size: .875rem; }
+
+@container (min-width: 768px) {
+  .est-container { padding: 0 32px; }
+  .est-hero { min-height: 70vh; align-items: center; }
+  .est-hero-overlay { background: linear-gradient(to right, rgba(10, 12, 14, .72) 0%, rgba(10, 12, 14, .35) 55%, rgba(10, 12, 14, 0) 80%); }
+  .est-hero-content { padding-top: 96px; padding-bottom: 96px; }
+  .est-section { padding: 96px 0; }
+  .est-card { padding: 48px; }
+  .est-contact-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (min-width: 1024px) {
+  .est-footer-inner { grid-template-columns: 1fr auto; align-items: start; }
+  .est-copyright { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .est-page * { transition: none !important; animation: none !important; } }

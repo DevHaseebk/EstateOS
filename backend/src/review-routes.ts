@@ -2,9 +2,10 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requireOwnerWritable, requirePortal, type AuthRequest } from './auth.js';
-import { Agency, AgencyAudit, REVIEW_STATUSES, User } from './models.js';
+import { Agency, AgencyAudit, REVIEW_STATUSES, User, WebsiteDraft } from './models.js';
 import { profileDetails, publicContactView } from './profile-routes.js';
 import { applyRestrictionTransition, restrictionView } from './restriction.js';
+import { getReadinessIssues, licensedHeroDefaults, virtualDraft } from './website.js';
 import { applyReviewTransition, ownerReviewView, reviewView } from './review.js';
 import { ownerScope, superAdminScope } from './tenant.js';
 import { directoryQuerySchema, reopenSchema, restrictionSchema, resubmitSchema, reviewDecisionSchema, reviewQueueQuerySchema } from './validation.js';
@@ -88,6 +89,9 @@ router.get('/super-admin/agencies', asyncRoute(async (request, response) => {
   const page = found.slice(0, limit);
   const owners = await User.find({ role: 'AGENCY_OWNER', agencyId: { $in: page.map((agency) => agency._id) } }).select('agencyId name emailNormalized').lean();
   const ownerByAgency = new Map(owners.map((owner) => [String(owner.agencyId), owner]));
+  const drafts = await WebsiteDraft.find({ agencyId: { $in: page.map((agency) => agency._id) } }).lean();
+  const draftByAgency = new Map(drafts.map((draft) => [String(draft.agencyId), draft]));
+  const licensedIds = new Set(licensedHeroDefaults().map((entry) => entry.id));
   const last = page.at(-1);
   response.json({ data: {
     items: page.map((agency) => {
@@ -95,7 +99,8 @@ router.get('/super-admin/agencies', asyncRoute(async (request, response) => {
       return {
         id: String(agency._id), agencyName: agency.name, ownerName: owner?.name ?? null, ownerEmail: owner?.emailNormalized ?? null,
         createdAt: agency.createdAt, reviewStatus: agency.reviewStatus, restrictionStatus: agency.restrictionStatus ?? 'NONE',
-        websiteReadiness: 'NOT_READY', publicationStatus: agency.publicationStatus ?? 'NEVER_PUBLISHED',
+        websiteReadiness: getReadinessIssues(draftByAgency.get(String(agency._id)) ?? virtualDraft(agency), licensedIds).length ? 'NOT_READY' : 'READY',
+        publicationStatus: agency.publicationStatus ?? 'NEVER_PUBLISHED',
       };
     }),
     nextCursor: found.length > limit && last ? encodeCursor(last.createdAt, last._id) : null,
@@ -109,6 +114,7 @@ router.get('/super-admin/agencies/:agencyId', asyncRoute(async (request, respons
   if (!agency) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');
   const owner = await User.findOne({ role: 'AGENCY_OWNER', agencyId: agency._id }).select('name emailNormalized').lean();
   const history = await AgencyAudit.find({ agencyId: agency._id }).sort({ at: -1 }).limit(50).lean();
+  const readinessIssues = getReadinessIssues(await WebsiteDraft.findOne({ agencyId: agency._id }).lean() ?? virtualDraft(agency));
   response.json({ data: {
     id: String(agency._id),
     agencyName: agency.name,
@@ -119,7 +125,8 @@ router.get('/super-admin/agencies/:agencyId', asyncRoute(async (request, respons
     review: { ...reviewView(agency), submittedForReviewAt: agency.submittedForReviewAt },
     restrictionStatus: agency.restrictionStatus ?? 'NONE',
     restriction: restrictionView(agency),
-    websiteReadiness: 'NOT_READY',
+    websiteReadiness: readinessIssues.length ? 'NOT_READY' : 'READY',
+    readinessIssues,
     publicationStatus: agency.publicationStatus ?? 'NEVER_PUBLISHED',
     history: history.map((entry) => ({
       at: entry.at, axis: entry.axis ?? 'REVIEW', action: entry.action, actorRole: entry.actorRole, fromStatus: entry.fromStatus, toStatus: entry.toStatus,

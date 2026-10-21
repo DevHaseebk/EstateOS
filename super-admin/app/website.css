@@ -1,0 +1,12 @@
+/* Phase 3b: website readiness and the read-only private preview (D-065 / D-101). */
+.website-ready { background: #e3f4ea; color: #145236; }
+.readiness-list { margin: .4rem 0 0; padding-left: 1.1rem; }
+.preview-link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; box-sizing: border-box; }
+.preview-page { max-width: 1280px; }
+.preview-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; margin-bottom: 1rem; padding: .75rem 1rem; background: #fff4d6; border: 1px solid #ecd9a6; border-radius: 12px; color: #4d3800; }
+.preview-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.segmented { display: inline-flex; border: 1px solid #9bab9f; border-radius: 9px; overflow: hidden; }
+.segmented button { min-height: 40px; padding: 0 .9rem; border: 0; background: #fff; font-weight: 600; }
+.segmented button[aria-pressed="true"] { background: #126d59; color: #fff; }
+.preview-canvas { border: 1px solid #d5ded8; border-radius: 12px; overflow: hidden; background: #fff; }
+.preview-mobile { width: 390px; max-width: 100%; margin: 0 auto; }

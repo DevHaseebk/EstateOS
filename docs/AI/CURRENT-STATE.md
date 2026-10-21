@@ -45,6 +45,15 @@ Phase 3 is split: 3a Agency Admin shell and Agency Profile; 3b My Website, theme
 
 - Checks: typecheck, lint and build pass for all 4 workspaces; `npm test -w backend` passes 52/52; the migration ran on Atlas dev; the HTTPS end-to-end check passed.
 
+## Phase 3b status (2026-10-21)
+
+The Phase 3b contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-3B-WEBSITE-FOUNDATION-CONTRACT-APPROVED.md`.
+
+- Built: the `WebsiteDraft`; My Website hub, Theme Apply, and the Guided Editor for Header, Hero and Contact (Footer is read-only); D-033 readiness; owner and Super Admin private preview; the D-045 checklist; Profile values mapped into the draft.
+- New library workspace `site-template/`, holding the shared template and the licensed Hero photo list.
+- Checks: typecheck, lint and build pass for all 5 workspaces; `npm test -w backend` passes 66/66; the HTTPS end-to-end check passed.
+- **Owner action:** supply the licensed default Hero photos (`site-template/assets/LICENSES.md`). Until then no site can be READY.
+
 ## Next gate (written before Phase 1; kept for history)
 
 Review actual repo/active Git diff; reconcile AI setup; document Phase 1 exact server session/CSRF/dev host, agency/user/session bootstrap/recovery, tenant-scoping and versioned auth API contracts with tests. Obtain explicit owner approval **before auth/tenant business code**. Suggested prompt: `docs/AI/PHASE-1-AUTH-TENANT-CODEX-PROMPT.md`.

@@ -2,19 +2,25 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { apiMutation, type OwnerSession } from '../lib/api';
 
 // D-100 / Phase 3a §6: a page with unsaved changes registers a guard; leaving through the shell asks Save / Discard / Stay.
 type Guard = { isDirty: () => boolean; save: () => Promise<boolean> };
-const GuardContext = createContext<(guard: Guard | null) => void>(() => undefined);
-export const useUnsavedGuard = () => useContext(GuardContext);
+type GuardApi = { register: (guard: Guard | null) => void; guarded: (action: () => void) => void };
+const GuardContext = createContext<GuardApi>({ register: () => undefined, guarded: (action) => action() });
+/** Pages with unsaved edits register here; the shell asks Save / Discard / Stay before leaving. */
+export const useUnsavedGuard = () => useContext(GuardContext).register;
+/** Runs an in-page action (switch section, open Preview) only after the same Save / Discard / Stay check (D-051). */
+export const useGuardedAction = () => useContext(GuardContext).guarded;
 
 // D-046: only screens that work are listed (Phase 3a owner answer 5).
 const NAV = [
   { href: '/', label: 'Overview' },
+  { href: '/website', label: 'My Website' },
   { href: '/profile', label: 'Agency profile' },
 ];
+const isCurrent = (pathname: string, href: string) => href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
 
 export function AppShell({ session, onSignedOut, children }: { session: OwnerSession; onSignedOut: () => void; children: ReactNode }) {
   const pathname = usePathname();
@@ -34,10 +40,11 @@ export function AppShell({ session, onSignedOut, children }: { session: OwnerSes
     if (!pending && element.open) element.close();
   }, [pending]);
 
-  function guarded(action: () => void) {
+  const guarded = useCallback((action: () => void) => {
     if (guard.current?.isDirty()) setPending(() => action);
     else action();
-  }
+  }, []);
+  const api = useMemo(() => ({ register, guarded }), [register, guarded]);
   function navigate(event: MouseEvent<HTMLAnchorElement>, href: string) {
     setMenuOpen(false);
     if (!guard.current?.isDirty()) return;
@@ -65,7 +72,7 @@ export function AppShell({ session, onSignedOut, children }: { session: OwnerSes
     action?.();
   }
 
-  return <GuardContext.Provider value={register}>
+  return <GuardContext.Provider value={api}>
     <div className="app-shell">
       <header className="app-topbar">
         <span className="app-brand">EstateOS</span>
@@ -75,7 +82,7 @@ export function AppShell({ session, onSignedOut, children }: { session: OwnerSes
         <p className="app-brand desktop-only">EstateOS</p>
         <p className="sidebar-agency">{session.agency.name}</p>
         <nav aria-label="Agency admin">
-          {NAV.map((item) => <Link key={item.href} href={item.href} aria-current={pathname === item.href ? 'page' : undefined}
+          {NAV.map((item) => <Link key={item.href} href={item.href} aria-current={isCurrent(pathname, item.href) ? 'page' : undefined}
             onClick={(event) => navigate(event, item.href)}>{item.label}</Link>)}
         </nav>
         <div className="sidebar-footer">

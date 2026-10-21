@@ -18,6 +18,7 @@ type Detail = {
   restrictionStatus: string;
   restriction: { status: string; version: number; latestRestriction: { action: string; reason: string; decidedAt: string } | null };
   websiteReadiness: string;
+  readinessIssues: { key: string; message: string }[];
   publicationStatus: string;
   history: { at: string; axis: string; action: string; actorRole: string; fromStatus: string; toStatus: string; reason?: string }[];
 };
@@ -111,9 +112,14 @@ export default function AgencyReviewPage() {
           <div className="badges">
             <span className={`badge review-${status.toLowerCase()}`}>Review: {REVIEW_LABELS[status] ?? status}</span>
             {restricted && <span className={`badge account-${restriction.status.toLowerCase()}`}>Account: {RESTRICTION_LABELS[restriction.status]}</span>}
-            <span className="badge neutral">Website: not ready (website builder comes later)</span>
+            <span className={`badge ${detail.websiteReadiness === 'READY' ? 'website-ready' : 'neutral'}`}>Website: {detail.websiteReadiness === 'READY' ? 'ready (not live yet)' : 'not ready'}</span>
           </div>
-          <button type="button" className="secondary" disabled title="Available after the website builder">Private preview — available after the website builder</button>
+          {detail.readinessIssues.length > 0 && <div className="latest-reason">
+            <p className="eyebrow">Website essentials still missing</p>
+            <ul className="readiness-list">{detail.readinessIssues.map((issue) => <li key={issue.key}>{issue.message}</li>)}</ul>
+          </div>}
+          {/* D-065 / D-101: authorized, read-only private preview of the saved draft. */}
+          <Link href={`/agencies/${detail.id}/preview`} className="secondary preview-link">Private preview</Link>
           {latest?.reason && <div className="latest-reason"><p className="eyebrow">Latest reason ({ACTION_LABELS[`REVIEW_${latest.action}`] ?? latest.action})</p><p>{latest.reason}</p></div>}
         </section>
 

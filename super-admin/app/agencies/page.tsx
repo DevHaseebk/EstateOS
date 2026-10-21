@@ -110,7 +110,7 @@ function AgencyDirectory() {
             <div className="badges">
               <span className={`badge small review-${item.reviewStatus.toLowerCase()}`}>Review: {REVIEW_LABELS[item.reviewStatus] ?? item.reviewStatus}</span>
               {item.restrictionStatus !== 'NONE' && <span className={`badge small account-${item.restrictionStatus.toLowerCase()}`}>Account: {RESTRICTION_LABELS[item.restrictionStatus]}</span>}
-              <span className="badge small neutral">Website: not ready</span>
+              <span className={`badge small ${item.websiteReadiness === 'READY' ? 'website-ready' : 'neutral'}`}>Website: {item.websiteReadiness === 'READY' ? 'ready (not live)' : 'not ready'}</span>
             </div>
           </div>
           <Link className="review-link" href={`/agencies/${item.id}`}>View / Manage<span className="visually-hidden"> {item.agencyName}</span></Link>

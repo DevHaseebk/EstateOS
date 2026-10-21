@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requireOwnerWritable, requirePortal } from './auth.js';
-import { Agency, User } from './models.js';
+import { Agency, User, WebsiteDraft } from './models.js';
 import { ownerCanEdit, ReviewError } from './review.js';
 import { ownerScope, tenantAgencyFilter } from './tenant.js';
 import { profileSchema } from './validation.js';
+import { mapFromAgency } from './website.js';
 
 // Phase 3a Agency Profile (docs/PHASE-3A-AGENCY-PROFILE-CONTRACT-APPROVED.md). Agency comes from the session only.
 const router = Router();
@@ -74,6 +75,12 @@ router.put('/owner/profile', asyncRoute(async (request, response) => {
     );
     if (result.modifiedCount !== 1) throw new ReviewError(409, 'PROFILE_CONFLICT', 'These details were changed in another window. Reload to see the latest version.');
     await User.updateOne({ _id: scope.userId, role: 'AGENCY_OWNER', agencyId: agency._id }, { $set: { name: input.ownerName } }, { session });
+    // D-085 (Phase 3b §3): stage the saved public-eligible values into the private website draft, same transaction.
+    const mapped = mapFromAgency({
+      _id: agency._id, name: input.agencyName, mobileE164: input.mobile, whatsappE164: input.whatsapp, reviewStatus: agency.reviewStatus,
+      publicContact: input.publicContact, profile: input.profile,
+    });
+    await WebsiteDraft.updateOne({ agencyId: agency._id }, { $set: { mapped } }, { session, upsert: true });
   });
   const [agency, owner] = await Promise.all([
     Agency.findOne(tenantAgencyFilter(scope)).lean(),

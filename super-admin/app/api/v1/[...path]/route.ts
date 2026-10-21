@@ -9,7 +9,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   const { path } = await context.params;
   const route = `/api/v1/${path.join('/')}`;
   const allowed = (request.method === 'GET' && (['/api/v1/auth/csrf', '/api/v1/super-admin/session', '/api/v1/super-admin/review-queue', '/api/v1/super-admin/agencies'].includes(route) ||
-      /^\/api\/v1\/super-admin\/agencies\/[a-f0-9]{24}$/i.test(route))) ||
+      /^\/api\/v1\/super-admin\/agencies\/[a-f0-9]{24}(\/website)?$/i.test(route))) ||
     (request.method === 'POST' && (['/api/v1/super-admin/sessions', '/api/v1/auth/recovery/complete'].includes(route) ||
       /^\/api\/v1\/super-admin\/agencies\/[a-f0-9]{24}\/(review-decisions|reopen|restrictions)$/i.test(route))) ||
     (request.method === 'DELETE' && route === '/api/v1/super-admin/session');

@@ -72,3 +72,32 @@ export const profileSchema = z.strictObject({
   }),
   expectedProfileVersion: z.number().int().min(0),
 });
+
+// Phase 3b My Website contract §1 Q4 and §6: text limits and strict section bodies.
+const sectionText = (min: number, max: number) => z.string().trim()
+  .min(min, `Must be at least ${min} characters`).max(max, `Must be at most ${max} characters`);
+const optionalSectionText = (max: number) => z.string().trim().max(max, `Must be at most ${max} characters`).optional()
+  .transform((value) => value ? value : undefined);
+export const themeSchema = z.strictObject({
+  preset: z.enum(['MODERN_LIGHT', 'WARM_EDITORIAL', 'CONTEMPORARY_DARK']),
+  expectedThemeVersion: z.number().int().min(0),
+});
+export const sectionSchemas = {
+  header: z.strictObject({
+    contactButtonLabel: sectionText(2, 30),
+    preferredContact: z.enum(['WHATSAPP', 'PHONE']).nullable().optional(),
+    expectedVersion: z.number().int().min(0),
+  }),
+  hero: z.strictObject({
+    heading: sectionText(3, 80),
+    subtitle: optionalSectionText(160),
+    ctaLabel: sectionText(2, 30),
+    heroImageId: z.string().max(100).nullable().optional(),
+    expectedVersion: z.number().int().min(0),
+  }),
+  contact: z.strictObject({
+    heading: sectionText(3, 80),
+    message: optionalSectionText(300),
+    expectedVersion: z.number().int().min(0),
+  }),
+} as const;

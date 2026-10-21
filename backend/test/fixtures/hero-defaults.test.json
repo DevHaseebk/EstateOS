@@ -1,0 +1,4 @@
+[
+  { "id": "test-licensed", "label": "Synthetic licensed photo", "file": "test-licensed.jpg", "source": "test fixture", "author": "EstateOS tests", "license": "Synthetic test licence", "recordedAt": "2026-10-21" },
+  { "id": "test-unlicensed", "label": "Photo without licence", "file": "test-unlicensed.jpg", "source": "test fixture", "author": "EstateOS tests", "license": "", "recordedAt": "2026-10-21" }
+]

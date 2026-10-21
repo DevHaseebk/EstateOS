@@ -1,3 +1,54 @@
+# EstateOS — Phase 3b My Website foundation: implemented and verified by Claude (2026-10-21)
+
+## Current task
+- Contract: `docs/PHASE-3B-WEBSITE-FOUNDATION-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-21, including the section 10 confirmations.
+- Git: branch `master`, HEAD `9472b76` (pushed). **All Phase 3b work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-030–D-043, D-045, D-046, D-048–D-052, D-085, D-089, D-099, D-101, D-102, D-108, D-109, D-110, D-115.
+
+## Work completed
+- **`site-template/`** (new library workspace; no app, no port):
+  - `SiteTemplate` renders Header, Hero, Contact and Footer, using container queries so a 390 px preview behaves like a phone;
+  - `template.css` holds the D-042 HEX values, the D-039 fonts (supplied by the host app as CSS variables) and the contract section 8 values. Sizes use `cqi` instead of `vw`, which is the same at full width;
+  - `siteModelFromWebsite` builds the render model from the API data;
+  - `assets/hero-defaults.json` (empty) and `assets/LICENSES.md` explain how to add licensed photos; `src/hero-images.ts` maps ids to static imports.
+  - Root `workspaces` now lists it first. The Admin and Super Admin portals have `transpilePackages` and a dependency on it; the backend depends on it only to resolve `hero-defaults.json`.
+- **Backend**
+  - `models.ts`: `WebsiteDraft` (unique `agencyId`, theme {preset, version}, sections header/hero/contact each with its own version, `mapped`).
+  - `website.ts`:
+    - `licensedHeroDefaults` (entries with every licence field; `HERO_DEFAULTS_PATH` override for tests);
+    - `mapFromAgency` (D-085/D-099), `ensureDraft`, `virtualDraft`;
+    - `getReadinessIssues` (the single D-033 rule), and the views.
+  - `website-routes.ts`:
+    - `GET /owner/website`, `PUT /owner/website/theme`, `PUT /owner/website/sections/:section`;
+    - `GET /super-admin/agencies/:id/website` (read-only; never creates a draft);
+    - errors `THEME_CONFLICT`, `SECTION_CONFLICT`, `WEBSITE_READ_ONLY`, `AGENCY_DEACTIVATED`, plus field-level 422 for an unlicensed photo or a non-public preferred contact.
+  - Profile PUT upserts `mapped` in the same transaction. The Super Admin directory and detail compute `websiteReadiness` and `readinessIssues`.
+- **BFF**: the owner facade allows the website GET, the theme PUT and the PUTs for the header/hero/contact sections. The Super Admin facade allows `agencies/:id/website`.
+- **Agency Admin**
+  - Navigation: Overview, My Website, Agency profile.
+  - `/website` hub; `/website/theme` (candidate preview, Apply, Cancel); `/website/editor?section=` (per-section Save, with Save / Discard / Stay through the shell guard `useGuardedAction`); `/website/preview` (desktop and mobile width).
+  - Overview shows the D-045 checklist. New `OwnerPage` wrapper, `lib/website.ts` and `website.css`.
+- **Super Admin**: readiness badges; missing-items list on the agency page; `/agencies/[id]/preview` (read-only).
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (5 workspaces) → exit 0.
+- `npm test -w backend` → **66/66** (new `test/website.test.ts`, 13 tests, with fixture `test/fixtures/hero-defaults.test.json`; `bff.test.ts` +1).
+- The template server-renders all 3 themes. Only the chosen contacts appear, and with no public contact there are no CTA buttons.
+- HTTPS end-to-end check with the synthetic test owner:
+  - draft created; Apply theme; stale theme → `THEME_CONFLICT`;
+  - Hero saved, issues reduced to PUBLIC_CONTACT and HERO_IMAGE; unlicensed photo → 422; injected agencyId → 422;
+  - Super Admin website view and readiness; owner → Super Admin route → 404;
+  - all new pages → 200.
+  - The test draft was then deleted from the dev DB.
+- Not verified: a visual click-through in Chrome or Edge (in-app browser blocks `*.localhost`). The automated contrast check named in contract section 9 was done as computed ratios only (section 8), not with an in-browser tool.
+
+## Handoff
+- **Owner action:** licensed default Hero photos. Until then every site lacks HERO_IMAGE and cannot be READY.
+- Next: Phase 3c (optional sections) and 3d (uploads, object storage account needed), or Phase 4 (first Live). Each needs a contract.
+- Preserve: drafts are only ever reached by session-derived agencyId; a Super Admin read never creates a draft; readiness is computed, never stored.
+
+---
+
 # EstateOS — Phase 3a Agency Admin shell and Agency Profile: implemented and verified by Claude (2026-10-21)
 
 ## Current task

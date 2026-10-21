@@ -123,7 +123,55 @@ for (const operation of ['updateOne', 'updateMany', 'findOneAndUpdate', 'replace
   agencyAuditSchema.pre(operation, () => { throw new Error('AUDIT_APPEND_ONLY'); });
 }
 
+// Phase 3b: one private website draft per agency (D-050/D-052). Never public; always scoped by agencyId (D-089).
+export const THEME_PRESETS = ['MODERN_LIGHT', 'WARM_EDITORIAL', 'CONTEMPORARY_DARK'] as const;
+export const WEBSITE_SECTIONS = ['header', 'hero', 'contact'] as const;
+const draftHeaderSchema = new Schema({
+  contactButtonLabel: { type: String, required: true, default: 'Contact us' },
+  preferredContact: { type: String, enum: ['WHATSAPP', 'PHONE'] },
+  version: { type: Number, required: true, default: 0 },
+}, { _id: false });
+const draftHeroSchema = new Schema({
+  heading: { type: String, default: '' },
+  subtitle: { type: String },
+  ctaLabel: { type: String, required: true, default: 'Contact us' },
+  heroImage: { type: new Schema({ kind: { type: String, enum: ['PLATFORM_DEFAULT'], required: true }, assetId: { type: String, required: true } }, { _id: false }) },
+  version: { type: Number, required: true, default: 0 },
+}, { _id: false });
+const draftContactSchema = new Schema({
+  heading: { type: String, required: true, default: 'Get in touch' },
+  message: { type: String },
+  version: { type: Number, required: true, default: 0 },
+}, { _id: false });
+// D-085: Profile values copied into the draft on every successful Profile save; numbers only when chosen as public (D-099).
+const draftMappedSchema = new Schema({
+  agencyName: { type: String, required: true },
+  phone: { type: String },
+  whatsapp: { type: String },
+  publicEmail: { type: String },
+  officeAddress: { type: String },
+  city: { type: String },
+  mappedAt: { type: Date, required: true, default: Date.now },
+}, { _id: false });
+const websiteDraftSchema = new Schema({
+  agencyId: { type: Schema.Types.ObjectId, ref: 'Agency', required: true, unique: true, immutable: true },
+  theme: {
+    type: new Schema({ preset: { type: String, enum: THEME_PRESETS }, version: { type: Number, required: true, default: 0 } }, { _id: false }),
+    default: () => ({}),
+  },
+  sections: {
+    type: new Schema({
+      header: { type: draftHeaderSchema, default: () => ({}) },
+      hero: { type: draftHeroSchema, default: () => ({}) },
+      contact: { type: draftContactSchema, default: () => ({}) },
+    }, { _id: false }),
+    default: () => ({}),
+  },
+  mapped: { type: draftMappedSchema, required: true },
+}, { timestamps: true });
+
 export const Agency = mongoose.model('Agency', agencySchema);
+export const WebsiteDraft = mongoose.model('WebsiteDraft', websiteDraftSchema);
 export const AgencyAudit = mongoose.model('AgencyAudit', agencyAuditSchema);
 export const User = mongoose.model('User', userSchema);
 export const AuthSession = mongoose.model('AuthSession', sessionSchema);

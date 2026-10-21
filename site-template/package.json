@@ -1,0 +1,26 @@
+{
+  "name": "site-template",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Shared EstateOS public agency website template (D-030). Library workspace, not an app.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./template.css": "./src/template.css",
+    "./hero-defaults.json": "./assets/hero-defaults.json"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "peerDependencies": {
+    "react": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "eslint": "^10.13.0",
+    "eslint-config-next": "^16.4.2",
+    "typescript": "^5.9.3"
+  }
+}

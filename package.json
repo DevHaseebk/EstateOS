@@ -1,7 +1,7 @@
 {
   "name": "estateos",
   "private": true,
-  "workspaces": ["backend", "admin", "super-admin", "frontend"],
+  "workspaces": ["site-template", "backend", "admin", "super-admin", "frontend"],
   "scripts": {
     "dev": "concurrently -k -n frontend,admin,super-admin,backend \"npm run dev:frontend\" \"npm run dev:admin\" \"npm run dev:super-admin\" \"npm run dev:backend\"",
     "dev:frontend": "npm run dev -w frontend",

@@ -151,3 +151,26 @@ test('Phase 3a profile routes: GET and PUT on the owner portal only', async () =
     assert.equal(forwarded.length, forwardedCount);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Phase 3b website routes: owner GET/PUT and Super Admin GET only on their portal', async () => {
+  const originalFetch = globalThis.fetch;
+  const forwarded: string[] = [];
+  globalThis.fetch = async (input: string | URL | Request) => { forwarded.push(String(input)); return Response.json({ data: {} }); };
+  const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
+  const ownerPut = (path: string[]) => owner.PUT(new NextRequest(`https://admin.estateos.localhost/api/v1/${path.join('/')}`, {
+    method: 'PUT', headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+  }), ctx(path));
+  const agencyId = 'c'.repeat(24);
+  try {
+    assert.equal((await owner.GET(new NextRequest('https://admin.estateos.localhost/api/v1/owner/website'), ctx(['owner', 'website']))).status, 200);
+    assert.equal((await ownerPut(['owner', 'website', 'theme'])).status, 200);
+    for (const section of ['header', 'hero', 'contact']) assert.equal((await ownerPut(['owner', 'website', 'sections', section])).status, 200, section);
+    assert.equal((await superAdmin.GET(new NextRequest(`https://control.estateos.localhost/api/v1/super-admin/agencies/${agencyId}/website`), ctx(['super-admin', 'agencies', agencyId, 'website']))).status, 200);
+    const forwardedCount = forwarded.length;
+    assert.equal((await ownerPut(['owner', 'website', 'sections', 'footer'])).status, 404);
+    assert.equal((await ownerPut(['owner', 'website'])).status, 404);
+    assert.equal((await owner.GET(new NextRequest(`https://admin.estateos.localhost/api/v1/super-admin/agencies/${agencyId}/website`), ctx(['super-admin', 'agencies', agencyId, 'website']))).status, 404);
+    assert.equal((await superAdmin.GET(new NextRequest('https://control.estateos.localhost/api/v1/owner/website'), ctx(['owner', 'website']))).status, 404);
+    assert.equal(forwarded.length, forwardedCount);
+  } finally { globalThis.fetch = originalFetch; }
+});
