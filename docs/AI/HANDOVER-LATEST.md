@@ -2,7 +2,7 @@
 
 ## Current task
 - Contract: `docs/PHASE-4A-FIRST-LIVE-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 8 confirmations.
-- Git: branch `master`, HEAD `5f16abc` (pushed). **All Phase 4a work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Git: branch `master`, Phase 4a committed as `190b325` and pushed to `origin/master` on the owner's instruction.
 - Decisions: D-029, D-033, D-048, D-054 (Live part), D-075, D-077, D-081–D-084, D-088–D-092, D-094 (dev hosts), D-102, D-111, D-115, D-119.
 
 ## Work completed

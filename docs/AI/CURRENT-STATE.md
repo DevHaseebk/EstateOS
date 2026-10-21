@@ -63,7 +63,7 @@ The Phase 3c contract is **APPROVED** (2026-10-21) and **implemented and verifie
 
 ## Phase 4a status (2026-10-22)
 
-Phase 4 is split: 4a automatic first Live and public site; 4b Publish Updates. The Phase 4a contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-4A-FIRST-LIVE-CONTRACT-APPROVED.md`.
+Phase 4 is split: 4a automatic first Live and public site; 4b Publish Updates. The Phase 4a contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude**, committed `190b325` and pushed: `docs/PHASE-4A-FIRST-LIVE-CONTRACT-APPROVED.md`.
 
 - Built: idempotent first activation (triggers plus a 5-minute reconciler and CLI); slug fixed at first Live; append-only `PublishedRevision`; the PUBLIC portal and key; `frontend/` serves `<slug>.sites.estateos.localhost`; one identical 404 for unknown, Not Live, Blocked and Deactivated sites; truthful status and links in both portals.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 89/89; the HTTPS end-to-end check passed.
