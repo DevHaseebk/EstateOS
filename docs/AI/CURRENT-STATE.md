@@ -41,7 +41,7 @@ Phase 2b contract is **APPROVED** (2026-10-21) and **implemented and verified by
 
 ## Phase 3a status (2026-10-21)
 
-Phase 3 is split: 3a Agency Admin shell and Agency Profile; 3b My Website, theme, editor, images, readiness and preview; 4 first Live and public site; 5 Properties. The Phase 3a contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-3A-AGENCY-PROFILE-CONTRACT-APPROVED.md`. Phase 2a owner answer 4 was amended: Approved agencies can edit their profile.
+Phase 3 is split: 3a Agency Admin shell and Agency Profile; 3b My Website, theme, editor, images, readiness and preview; 4 first Live and public site; 5 Properties. The Phase 3a contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude**, committed `1a1697b` and pushed: `docs/PHASE-3A-AGENCY-PROFILE-CONTRACT-APPROVED.md`. Phase 2a owner answer 4 was amended: Approved agencies can edit their profile.
 
 - Checks: typecheck, lint and build pass for all 4 workspaces; `npm test -w backend` passes 52/52; the migration ran on Atlas dev; the HTTPS end-to-end check passed.
 
