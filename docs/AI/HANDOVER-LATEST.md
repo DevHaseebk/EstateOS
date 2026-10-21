@@ -1,3 +1,48 @@
+# EstateOS — Phase 3c optional website sections: implemented and verified by Claude (2026-10-22)
+
+## Current task
+- Contract: `docs/PHASE-3C-OPTIONAL-SECTIONS-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-21, including the section 7 confirmations.
+- Git: branch `master`, HEAD `cdfa102` (pushed). **All Phase 3c work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-031, D-032, D-033, D-050, D-051, D-052, D-089, D-099, D-109, D-110, D-115, D-117.
+
+## Work completed
+- **`site-template/`**
+  - types `SITE_ICONS` (12), `OPTIONAL_SECTIONS`, `OptionalBlock`; `icons.tsx` (inline line SVGs);
+  - `siteModelFromWebsite` builds the optional blocks in layout order, keeping only sections that are shown **and** have their minimum content;
+  - `SiteTemplate` renders About, card grids (1/2/3 columns) and Team (initials, consented numbers), plus header in-page nav (from 768 px wide).
+- **Backend**
+  - `models.ts`: draft sections `about`, `services`, `whyChooseUs`, `team` (each with a version) and `layout` (order, visible, version).
+  - `validation.ts`: section limits; `siteIcon`; team consent refine; `layoutSchema` (a permutation of the 5 keys).
+  - `website.ts`: `hasMinimumContent`, `layoutView`, and the new section views.
+  - `website-routes.ts`:
+    - a table-driven `sectionUpdate`;
+    - `versionFilter`, where a missing version counts as 0, so pre-3c drafts still save;
+    - a shown section can't be emptied (422, enforced atomically with a `layout.visible.<key> != true` filter);
+    - `PUT /owner/website/layout` (422 when showing a section without content; the content filter is in the same write; `LAYOUT_CONFLICT`).
+- **BFF (owner)**: section paths for about/services/whyChooseUs/team, and `/owner/website/layout`.
+- **Agency Admin editor**
+  - `useDraftForm` hook (save, dirty, 409/422 and the guard, shared by all forms);
+  - `forms.tsx`: `BasicSectionForm` (header/hero/contact/about), `CardsForm`, `TeamForm`, `LayoutPanel`;
+  - the section list shows Shown/Hidden badges and has a Layout entry. Styles are in `website.css`.
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (5 workspaces) → exit 0.
+- `npm test -w backend` → **76/76** (new `test/website-sections.test.ts`, 9 tests; `bff.test.ts` +1).
+- Server-render: sections appear in layout order; hidden and shown-but-empty sections are absent; icons, initials and nav are present in all 3 themes.
+- HTTPS end-to-end check with the synthetic test owner:
+  - showing an empty section → 422; saving Services, then showing it with a new order → 200;
+  - team number without consent → 422; emptying a shown section → 422;
+  - the Super Admin view reflects the changes; editor pages → 200.
+  - The test draft was then deleted.
+- Not verified: a visual click-through in Chrome or Edge.
+
+## Handoff
+- Owner action still open: licensed default Hero photos (3b).
+- Next: 3d (uploads; needs an object storage account) or Phase 4 (first Live).
+- Preserve: optional sections never affect readiness; a section is rendered only if it is visible **and** has content.
+
+---
+
 # EstateOS — Phase 3b My Website foundation: implemented and verified by Claude (2026-10-21)
 
 ## Current task

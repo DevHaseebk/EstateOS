@@ -174,3 +174,26 @@ test('Phase 3b website routes: owner GET/PUT and Super Admin GET only on their p
     assert.equal(forwarded.length, forwardedCount);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Phase 3c optional section and layout routes are owner-only PUTs', async () => {
+  const originalFetch = globalThis.fetch;
+  const forwarded: string[] = [];
+  globalThis.fetch = async (input: string | URL | Request) => { forwarded.push(String(input)); return Response.json({ data: {} }); };
+  const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
+  const put = (facade: typeof owner, host: string, path: string[]) => facade.PUT(new NextRequest(`https://${host}/api/v1/${path.join('/')}`, {
+    method: 'PUT', headers: { origin: `https://${host}`, 'content-type': 'application/json' }, body: '{}',
+  }), ctx(path));
+  try {
+    for (const section of ['about', 'services', 'whyChooseUs', 'team']) {
+      assert.equal((await put(owner, 'admin.estateos.localhost', ['owner', 'website', 'sections', section])).status, 200, section);
+    }
+    assert.equal((await put(owner, 'admin.estateos.localhost', ['owner', 'website', 'layout'])).status, 200);
+    const forwardedCount = forwarded.length;
+    assert.equal((await put(owner, 'admin.estateos.localhost', ['owner', 'website', 'sections', 'properties'])).status, 404);
+    assert.equal((await put(owner, 'admin.estateos.localhost', ['owner', 'website', 'sections', 'faq'])).status, 404);
+    assert.equal((await superAdmin.POST(new NextRequest('https://control.estateos.localhost/api/v1/owner/website/layout', {
+      method: 'POST', headers: { origin: 'https://control.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['owner', 'website', 'layout']))).status, 404);
+    assert.equal(forwarded.length, forwardedCount);
+  } finally { globalThis.fetch = originalFetch; }
+});

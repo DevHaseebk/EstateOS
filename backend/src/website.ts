@@ -43,13 +43,25 @@ export function mapFromAgency(agency: AgencyFields) {
   };
 }
 
+type CardFields = { title: string; description?: string | null; detail?: string | null; icon: string };
+type MemberFields = { name: string; role?: string | null; phone?: string | null; whatsapp?: string | null; contactConsent?: boolean | null };
+export type OptionalKey = 'about' | 'services' | 'whyChooseUs' | 'team';
+export const OPTIONAL_KEYS: readonly OptionalKey[] = ['about', 'services', 'whyChooseUs', 'team'];
+const DEFAULT_ORDER = ['about', 'services', 'properties', 'whyChooseUs', 'team'];
+const optional = <T extends object>(entries: T) => Object.fromEntries(Object.entries(entries).filter(([, value]) => value !== undefined && value !== null && value !== '')) as Partial<T>;
+
 export type DraftFields = {
   theme?: { preset?: string | null; version?: number | null } | null;
   sections?: {
     header?: { contactButtonLabel?: string | null; preferredContact?: string | null; version?: number | null } | null;
     hero?: { heading?: string | null; subtitle?: string | null; ctaLabel?: string | null; heroImage?: { assetId?: string | null } | null; version?: number | null } | null;
     contact?: { heading?: string | null; message?: string | null; version?: number | null } | null;
+    about?: { heading?: string | null; story?: string | null; version?: number | null } | null;
+    services?: { heading?: string | null; cards?: CardFields[] | null; version?: number | null } | null;
+    whyChooseUs?: { heading?: string | null; cards?: CardFields[] | null; version?: number | null } | null;
+    team?: { heading?: string | null; members?: MemberFields[] | null; version?: number | null } | null;
   } | null;
+  layout?: { order?: string[] | null; visible?: Partial<Record<OptionalKey, boolean | null>> | null; version?: number | null } | null;
   mapped?: { agencyName?: string | null; phone?: string | null; whatsapp?: string | null; publicEmail?: string | null; officeAddress?: string | null; city?: string | null } | null;
 };
 
@@ -92,8 +104,48 @@ export function readinessView(draft: DraftFields) {
   return { ready: issues.length === 0, issues };
 }
 
-export function sectionView(draft: DraftFields, section: 'header' | 'hero' | 'contact') {
+export type SectionKey = 'header' | 'hero' | 'contact' | OptionalKey;
+
+/** Phase 3c §3: the content a section needs before it may be shown (never an empty section, D-032). */
+export function hasMinimumContent(draft: DraftFields, section: OptionalKey): boolean {
   const sections = draft.sections ?? {};
+  if (section === 'about') return Boolean(sections.about?.story?.trim());
+  if (section === 'team') return (sections.team?.members?.length ?? 0) > 0;
+  return (sections[section]?.cards?.length ?? 0) > 0;
+}
+
+export function layoutView(draft: DraftFields) {
+  const layout = draft.layout ?? {};
+  return {
+    order: layout.order?.length === DEFAULT_ORDER.length ? [...layout.order] : [...DEFAULT_ORDER],
+    visible: Object.fromEntries(OPTIONAL_KEYS.map((key) => [key, layout.visible?.[key] ?? false])) as Record<OptionalKey, boolean>,
+    version: layout.version ?? 0,
+  };
+}
+
+export function sectionView(draft: DraftFields, section: SectionKey) {
+  const sections = draft.sections ?? {};
+  if (section === 'about') {
+    const about = sections.about ?? {};
+    return { heading: about.heading ?? 'About us', ...optional({ story: about.story }), version: about.version ?? 0 };
+  }
+  if (section === 'services' || section === 'whyChooseUs') {
+    const block = sections[section] ?? {};
+    const textKey = section === 'services' ? 'description' : 'detail';
+    return {
+      heading: block.heading ?? (section === 'services' ? 'Our services' : 'Why choose us'),
+      cards: (block.cards ?? []).map((card) => ({ title: card.title, ...optional({ [textKey]: card[textKey] }), icon: card.icon })),
+      version: block.version ?? 0,
+    };
+  }
+  if (section === 'team') {
+    const team = sections.team ?? {};
+    return {
+      heading: team.heading ?? 'Our team',
+      members: (team.members ?? []).map((member) => ({ name: member.name, ...optional({ role: member.role, phone: member.phone, whatsapp: member.whatsapp }), ...(member.contactConsent ? { contactConsent: true } : {}) })),
+      version: team.version ?? 0,
+    };
+  }
   if (section === 'header') {
     const header = sections.header ?? {};
     return { contactButtonLabel: header.contactButtonLabel ?? 'Contact us', preferredContact: header.preferredContact ?? null, version: header.version ?? 0 };
@@ -113,7 +165,8 @@ export function websiteView(agency: AgencyFields, draft: DraftFields, canEdit = 
   const mapped = draft.mapped ?? {};
   return {
     theme: { preset: draft.theme?.preset ?? null, version: draft.theme?.version ?? 0 },
-    sections: { header: sectionView(draft, 'header'), hero: sectionView(draft, 'hero'), contact: sectionView(draft, 'contact') },
+    sections: Object.fromEntries((['header', 'hero', 'contact', ...OPTIONAL_KEYS] as SectionKey[]).map((key) => [key, sectionView(draft, key)])),
+    layout: layoutView(draft),
     mapped: Object.fromEntries(['agencyName', 'phone', 'whatsapp', 'publicEmail', 'officeAddress', 'city']
       .map((key) => [key, mapped[key as keyof typeof mapped]]).filter(([, value]) => value)),
     readiness: readinessView(draft),

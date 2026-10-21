@@ -4,10 +4,13 @@ import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, 
 import { Agency, WebsiteDraft } from './models.js';
 import { ownerCanEdit, ReviewError } from './review.js';
 import { ownerScope, superAdminScope, tenantAgencyFilter } from './tenant.js';
-import { sectionSchemas, themeSchema } from './validation.js';
-import { ensureDraft, licensedHeroDefaults, readinessView, sectionView, virtualDraft, websiteView } from './website.js';
+import { layoutSchema, sectionSchemas, themeSchema } from './validation.js';
+import {
+  ensureDraft, hasMinimumContent, layoutView, licensedHeroDefaults, OPTIONAL_KEYS, readinessView, sectionView, virtualDraft, websiteView,
+  type DraftFields, type OptionalKey,
+} from './website.js';
 
-// Phase 3b My Website foundation (docs/PHASE-3B-WEBSITE-FOUNDATION-CONTRACT-APPROVED.md). Drafts are private (D-101).
+// Phase 3b My Website foundation and Phase 3c optional sections (docs/PHASE-3B-…, docs/PHASE-3C-…-APPROVED.md). Drafts are private (D-101).
 const router = Router();
 const OBJECT_ID = /^[a-f0-9]{24}$/i;
 type Section = keyof typeof sectionSchemas;
@@ -15,6 +18,64 @@ type Section = keyof typeof sectionSchemas;
 /** One field-level 422 in the same shape the error handler produces for zod errors. */
 function fieldError(path: string, message: string): never {
   throw new ZodError([{ code: 'custom', path: [path], message, input: undefined }]);
+}
+
+const OPTIONAL_LABELS: Record<OptionalKey, string> = { about: 'About', services: 'Services', whyChooseUs: 'Why Choose Us', team: 'Team' };
+const isOptional = (key: Section): key is OptionalKey => (OPTIONAL_KEYS as readonly string[]).includes(key);
+const defined = <T extends object>(value: T) => Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
+
+/** Version filter that also matches drafts created before a section existed (a missing version means 0). */
+function versionFilter(path: string, expected: number) {
+  return expected === 0 ? { $or: [{ [path]: 0 }, { [path]: { $exists: false } }] } : { [path]: expected };
+}
+
+/** The saved content of one section as it will be after this update (for the minimum-content rule). */
+function contentOf(set: Record<string, unknown>, path: string) {
+  return Object.fromEntries(Object.entries(set).filter(([field]) => field.startsWith(`${path}.`)).map(([field, value]) => [field.slice(path.length + 1), value]));
+}
+
+/** Validates one section body and builds its $set / $unset. Optional text left empty is removed, never stored as "". */
+function sectionUpdate(key: Section, body: unknown, draft: DraftFields, path: string) {
+  const set: Record<string, unknown> = {};
+  const unset: Record<string, ''> = {};
+  const put = (field: string, value: unknown) => { if (value === undefined || value === null) unset[`${path}.${field}`] = ''; else set[`${path}.${field}`] = value; };
+  if (key === 'header') {
+    const input = sectionSchemas.header.parse(body);
+    const preferred = input.preferredContact ?? null;
+    if (preferred === 'PHONE' && !draft.mapped?.phone) fieldError('preferredContact', 'Choose your mobile number as public first (Agency profile).');
+    if (preferred === 'WHATSAPP' && !draft.mapped?.whatsapp) fieldError('preferredContact', 'Choose your WhatsApp number as public first (Agency profile).');
+    put('contactButtonLabel', input.contactButtonLabel);
+    put('preferredContact', preferred);
+  } else if (key === 'hero') {
+    const input = sectionSchemas.hero.parse(body);
+    const imageId = input.heroImageId ?? null;
+    if (imageId && !licensedHeroDefaults().some((entry) => entry.id === imageId)) fieldError('heroImageId', 'Choose one of the listed photos.');
+    put('heading', input.heading);
+    put('ctaLabel', input.ctaLabel);
+    put('subtitle', input.subtitle);
+    put('heroImage', imageId ? { kind: 'PLATFORM_DEFAULT', assetId: imageId } : null);
+  } else if (key === 'contact') {
+    const input = sectionSchemas.contact.parse(body);
+    put('heading', input.heading);
+    put('message', input.message);
+  } else if (key === 'about') {
+    const input = sectionSchemas.about.parse(body);
+    put('heading', input.heading);
+    put('story', input.story);
+  } else if (key === 'services') {
+    const input = sectionSchemas.services.parse(body);
+    put('heading', input.heading);
+    put('cards', input.cards.map(defined));
+  } else if (key === 'whyChooseUs') {
+    const input = sectionSchemas.whyChooseUs.parse(body);
+    put('heading', input.heading);
+    put('cards', input.cards.map(defined));
+  } else {
+    const input = sectionSchemas.team.parse(body);
+    put('heading', input.heading);
+    put('members', input.members.map((member) => defined({ ...member, contactConsent: member.phone || member.whatsapp ? true : undefined })));
+  }
+  return { set, unset };
 }
 
 /** Owner website mutation guard: CSRF, Deactivated (403), no agencyId input, and the shared edit rule (Rejected → read-only). */
@@ -46,7 +107,7 @@ router.put('/owner/website/theme', asyncRoute(async (request, response) => {
   const input = themeSchema.parse(request.body);
   await ensureDraft(agency);
   const result = await WebsiteDraft.updateOne(
-    { agencyId: agency._id, 'theme.version': input.expectedThemeVersion },
+    { agencyId: agency._id, ...versionFilter('theme.version', input.expectedThemeVersion) },
     { $set: { 'theme.preset': input.preset }, $inc: { 'theme.version': 1 } },
   );
   if (result.modifiedCount !== 1) throw new ReviewError(409, 'THEME_CONFLICT', 'The theme was changed in another window. Reload to see the latest version.');
@@ -60,34 +121,42 @@ router.put('/owner/website/sections/:section', asyncRoute(async (request, respon
   const agency = await writableOwnerAgency(request);
   const draft = await ensureDraft(agency);
   const key = section as Section;
-  const input = sectionSchemas[key].parse(request.body);
-  const set: Record<string, unknown> = {};
-  const unset: Record<string, ''> = {};
   const path = `sections.${key}`;
-  if ('contactButtonLabel' in input) {
-    const preferred = input.preferredContact ?? null;
-    if (preferred === 'PHONE' && !draft.mapped?.phone) fieldError('preferredContact', 'Choose your mobile number as public first (Agency profile).');
-    if (preferred === 'WHATSAPP' && !draft.mapped?.whatsapp) fieldError('preferredContact', 'Choose your WhatsApp number as public first (Agency profile).');
-    set[`${path}.contactButtonLabel`] = input.contactButtonLabel;
-    if (preferred) set[`${path}.preferredContact`] = preferred; else unset[`${path}.preferredContact`] = '';
-  } else if ('ctaLabel' in input) {
-    const imageId = input.heroImageId ?? null;
-    if (imageId && !licensedHeroDefaults().some((entry) => entry.id === imageId)) fieldError('heroImageId', 'Choose one of the listed photos.');
-    set[`${path}.heading`] = input.heading;
-    set[`${path}.ctaLabel`] = input.ctaLabel;
-    if (input.subtitle) set[`${path}.subtitle`] = input.subtitle; else unset[`${path}.subtitle`] = '';
-    if (imageId) set[`${path}.heroImage`] = { kind: 'PLATFORM_DEFAULT', assetId: imageId }; else unset[`${path}.heroImage`] = '';
-  } else {
-    set[`${path}.heading`] = input.heading;
-    if (input.message) set[`${path}.message`] = input.message; else unset[`${path}.message`] = '';
+  const { set, unset } = sectionUpdate(key, request.body, draft, path);
+  // Phase 3c §3: a shown optional section may not be emptied; the visibility check is part of the same atomic write.
+  const conditions: Record<string, unknown>[] = [{ agencyId: agency._id }, versionFilter(`${path}.version`, Number(request.body?.expectedVersion))];
+  if (isOptional(key) && !hasMinimumContent({ sections: { [key]: contentOf(set, path) } }, key)) {
+    if (layoutView(draft).visible[key]) fieldError('section', `This section is shown on your website. Hide it in Layout before removing all of its content.`);
+    conditions.push({ [`layout.visible.${key}`]: { $ne: true } });
   }
   const result = await WebsiteDraft.updateOne(
-    { agencyId: agency._id, [`${path}.version`]: input.expectedVersion },
+    { $and: conditions },
     { $set: set, ...(Object.keys(unset).length ? { $unset: unset } : {}), $inc: { [`${path}.version`]: 1 } },
   );
   if (result.modifiedCount !== 1) throw new ReviewError(409, 'SECTION_CONFLICT', 'This section was changed in another window. Reload to see the latest version.');
   const updated = await WebsiteDraft.findOne({ agencyId: agency._id }).lean();
   response.json({ data: { section: sectionView(updated!, key), readiness: readinessView(updated!) } });
+}));
+
+router.put('/owner/website/layout', asyncRoute(async (request, response) => {
+  const agency = await writableOwnerAgency(request);
+  const input = layoutSchema.parse(request.body);
+  const draft = await ensureDraft(agency);
+  const conditions: Record<string, unknown>[] = [{ agencyId: agency._id }, versionFilter('layout.version', input.expectedLayoutVersion)];
+  for (const key of OPTIONAL_KEYS) {
+    if (!input.visible[key]) continue;
+    if (!hasMinimumContent(draft, key)) fieldError(`visible.${key}`, `Add content to ${OPTIONAL_LABELS[key]} before showing it.`);
+    // Same atomic write: the content must still be there when the layout is saved.
+    conditions.push(key === 'about' ? { 'sections.about.story': { $exists: true, $nin: ['', null] } }
+      : { [`sections.${key}.${key === 'team' ? 'members' : 'cards'}.0`]: { $exists: true } });
+  }
+  const result = await WebsiteDraft.updateOne(
+    { $and: conditions },
+    { $set: { 'layout.order': input.order, 'layout.visible': input.visible }, $inc: { 'layout.version': 1 } },
+  );
+  if (result.modifiedCount !== 1) throw new ReviewError(409, 'LAYOUT_CONFLICT', 'The layout or a section was changed in another window. Reload to see the latest version.');
+  const updated = await WebsiteDraft.findOne({ agencyId: agency._id }).lean();
+  response.json({ data: { layout: layoutView(updated!) } });
 }));
 
 router.get('/super-admin/agencies/:agencyId/website', asyncRoute(async (request, response) => {

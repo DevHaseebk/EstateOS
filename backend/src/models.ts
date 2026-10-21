@@ -125,7 +125,10 @@ for (const operation of ['updateOne', 'updateMany', 'findOneAndUpdate', 'replace
 
 // Phase 3b: one private website draft per agency (D-050/D-052). Never public; always scoped by agencyId (D-089).
 export const THEME_PRESETS = ['MODERN_LIGHT', 'WARM_EDITORIAL', 'CONTEMPORARY_DARK'] as const;
-export const WEBSITE_SECTIONS = ['header', 'hero', 'contact'] as const;
+export const WEBSITE_SECTIONS = ['header', 'hero', 'contact', 'about', 'services', 'whyChooseUs', 'team'] as const;
+// Phase 3c: D-032 optional sections, their default order (Properties is Phase 5) and the fixed icon list.
+export const OPTIONAL_ORDER = ['about', 'services', 'properties', 'whyChooseUs', 'team'] as const;
+export const SITE_ICONS = ['home', 'key', 'building', 'handshake', 'document', 'map-pin', 'search', 'chart', 'shield', 'star', 'phone', 'people'] as const;
 const draftHeaderSchema = new Schema({
   contactButtonLabel: { type: String, required: true, default: 'Contact us' },
   preferredContact: { type: String, enum: ['WHATSAPP', 'PHONE'] },
@@ -143,6 +146,54 @@ const draftContactSchema = new Schema({
   message: { type: String },
   version: { type: Number, required: true, default: 0 },
 }, { _id: false });
+const draftServiceCardSchema = new Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  icon: { type: String, enum: SITE_ICONS, required: true },
+}, { _id: false });
+const draftReasonCardSchema = new Schema({
+  title: { type: String, required: true },
+  detail: { type: String },
+  icon: { type: String, enum: SITE_ICONS, required: true },
+}, { _id: false });
+const draftAboutSchema = new Schema({
+  heading: { type: String, required: true, default: 'About us' },
+  story: { type: String },
+  version: { type: Number, required: true, default: 0 },
+}, { _id: false });
+const draftServicesSchema = new Schema({
+  heading: { type: String, required: true, default: 'Our services' },
+  cards: { type: [draftServiceCardSchema], default: [] },
+  version: { type: Number, required: true, default: 0 },
+}, { _id: false });
+const draftWhyChooseUsSchema = new Schema({
+  heading: { type: String, required: true, default: 'Why choose us' },
+  cards: { type: [draftReasonCardSchema], default: [] },
+  version: { type: Number, required: true, default: 0 },
+}, { _id: false });
+const draftTeamSchema = new Schema({
+  heading: { type: String, required: true, default: 'Our team' },
+  members: {
+    type: [new Schema({
+      name: { type: String, required: true }, role: { type: String }, phone: { type: String }, whatsapp: { type: String },
+      contactConsent: { type: Boolean },
+    }, { _id: false })],
+    default: [],
+  },
+  version: { type: Number, required: true, default: 0 },
+}, { _id: false });
+const draftLayoutSchema = new Schema({
+  order: { type: [{ type: String, enum: OPTIONAL_ORDER }], default: () => [...OPTIONAL_ORDER] },
+  visible: {
+    type: new Schema({
+      about: { type: Boolean, default: false }, services: { type: Boolean, default: false },
+      whyChooseUs: { type: Boolean, default: false }, team: { type: Boolean, default: false },
+    }, { _id: false }),
+    default: () => ({}),
+  },
+  version: { type: Number, required: true, default: 0 },
+}, { _id: false });
+
 // D-085: Profile values copied into the draft on every successful Profile save; numbers only when chosen as public (D-099).
 const draftMappedSchema = new Schema({
   agencyName: { type: String, required: true },
@@ -164,9 +215,14 @@ const websiteDraftSchema = new Schema({
       header: { type: draftHeaderSchema, default: () => ({}) },
       hero: { type: draftHeroSchema, default: () => ({}) },
       contact: { type: draftContactSchema, default: () => ({}) },
+      about: { type: draftAboutSchema, default: () => ({}) },
+      services: { type: draftServicesSchema, default: () => ({}) },
+      whyChooseUs: { type: draftWhyChooseUsSchema, default: () => ({}) },
+      team: { type: draftTeamSchema, default: () => ({}) },
     }, { _id: false }),
     default: () => ({}),
   },
+  layout: { type: draftLayoutSchema, default: () => ({}) },
   mapped: { type: draftMappedSchema, required: true },
 }, { timestamps: true });
 

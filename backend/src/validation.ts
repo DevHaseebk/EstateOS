@@ -78,6 +78,8 @@ const sectionText = (min: number, max: number) => z.string().trim()
   .min(min, `Must be at least ${min} characters`).max(max, `Must be at most ${max} characters`);
 const optionalSectionText = (max: number) => z.string().trim().max(max, `Must be at most ${max} characters`).optional()
   .transform((value) => value ? value : undefined);
+const siteIcon = z.enum(['home', 'key', 'building', 'handshake', 'document', 'map-pin', 'search', 'chart', 'shield', 'star', 'phone', 'people'], 'Choose an icon from the list');
+const optionalPhone = z.string().trim().optional().transform((value) => value ? value : undefined).pipe(phone.optional());
 export const themeSchema = z.strictObject({
   preset: z.enum(['MODERN_LIGHT', 'WARM_EDITORIAL', 'CONTEMPORARY_DARK']),
   expectedThemeVersion: z.number().int().min(0),
@@ -100,4 +102,40 @@ export const sectionSchemas = {
     message: optionalSectionText(300),
     expectedVersion: z.number().int().min(0),
   }),
+  // Phase 3c §3: optional sections. Empty content is allowed while hidden; the route enforces minimums when shown.
+  about: z.strictObject({
+    heading: sectionText(3, 60),
+    story: z.string().trim().optional().transform((value) => value ? value : undefined)
+      .pipe(z.string().min(20, 'Must be at least 20 characters').max(1200, 'Must be at most 1200 characters').optional()),
+    expectedVersion: z.number().int().min(0),
+  }),
+  services: z.strictObject({
+    heading: sectionText(3, 60),
+    cards: z.array(z.strictObject({ title: sectionText(2, 40), description: optionalSectionText(160), icon: siteIcon })).max(6, 'At most 6 services'),
+    expectedVersion: z.number().int().min(0),
+  }),
+  whyChooseUs: z.strictObject({
+    heading: sectionText(3, 60),
+    cards: z.array(z.strictObject({ title: sectionText(2, 40), detail: optionalSectionText(160), icon: siteIcon })).max(6, 'At most 6 reasons'),
+    expectedVersion: z.number().int().min(0),
+  }),
+  team: z.strictObject({
+    heading: sectionText(3, 60),
+    members: z.array(z.strictObject({
+      name: sectionText(2, 60),
+      role: optionalSectionText(60),
+      phone: optionalPhone,
+      whatsapp: optionalPhone,
+      contactConsent: z.boolean().optional(),
+    }).refine((member) => (!member.phone && !member.whatsapp) || member.contactConsent === true, {
+      message: 'Tick that this person agreed to show this number on the website', path: ['contactConsent'],
+    })).max(12, 'At most 12 team members'),
+    expectedVersion: z.number().int().min(0),
+  }),
 } as const;
+export const layoutSchema = z.strictObject({
+  order: z.array(z.enum(['about', 'services', 'properties', 'whyChooseUs', 'team'])).length(5)
+    .refine((order) => new Set(order).size === 5, 'Each section must appear exactly once'),
+  visible: z.strictObject({ about: z.boolean(), services: z.boolean(), whyChooseUs: z.boolean(), team: z.boolean() }),
+  expectedLayoutVersion: z.number().int().min(0),
+});

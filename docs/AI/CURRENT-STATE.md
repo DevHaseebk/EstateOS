@@ -54,6 +54,13 @@ The Phase 3b contract is **APPROVED** (2026-10-21) and **implemented and verifie
 - Checks: typecheck, lint and build pass for all 5 workspaces; `npm test -w backend` passes 66/66; the HTTPS end-to-end check passed.
 - **Owner action:** supply the licensed default Hero photos (`site-template/assets/LICENSES.md`). Until then no site can be READY.
 
+## Phase 3c status (2026-10-21)
+
+The Phase 3c contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-3C-OPTIONAL-SECTIONS-CONTRACT-APPROVED.md`.
+
+- Built: About, Services, Why Choose Us and Team (all hidden until they have content); a separate Layout save for show/hide and order; card editors; 12 icons; consent required for team numbers.
+- Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 76/76; server-render checks pass; the HTTPS end-to-end check passed.
+
 ## Next gate (written before Phase 1; kept for history)
 
 Review actual repo/active Git diff; reconcile AI setup; document Phase 1 exact server session/CSRF/dev host, agency/user/session bootstrap/recovery, tenant-scoping and versioned auth API contracts with tests. Obtain explicit owner approval **before auth/tenant business code**. Suggested prompt: `docs/AI/PHASE-1-AUTH-TENANT-CODEX-PROMPT.md`.

@@ -1,4 +1,39 @@
-import type { SiteModel } from './types';
+import { SiteIconGlyph } from './icons';
+import type { OptionalBlock, SiteModel } from './types';
+
+const NAV_LABELS: Record<OptionalBlock['key'], string> = { about: 'About', services: 'Services', whyChooseUs: 'Why us', team: 'Team' };
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]!.toUpperCase()).join('');
+
+/** Phase 3c optional sections (D-032). Only blocks that are shown and have content ever reach here. */
+function OptionalSectionView({ block }: { block: OptionalBlock }) {
+  const titleId = `est-${block.key}-title`;
+  return <section className={`est-section est-optional est-${block.key}`} id={block.key} aria-labelledby={titleId}>
+    <div className="est-container">
+      <h2 id={titleId} className="est-h2">{block.heading}</h2>
+      {block.key === 'about' && <p className="est-about-story">{block.story}</p>}
+      {(block.key === 'services' || block.key === 'whyChooseUs') && <ul className="est-card-grid">
+        {block.cards.map((card, index) => <li key={`${card.title}-${index}`} className="est-card est-feature">
+          <span className="est-icon"><SiteIconGlyph icon={card.icon} /></span>
+          <h3 className="est-h3">{card.title}</h3>
+          {card.text && <p className="est-muted">{card.text}</p>}
+        </li>)}
+      </ul>}
+      {block.key === 'team' && <ul className="est-card-grid">
+        {block.members.map((member, index) => <li key={`${member.name}-${index}`} className="est-card est-member">
+          <span className="est-initials" aria-hidden="true">{initials(member.name)}</span>
+          <div>
+            <h3 className="est-h3">{member.name}</h3>
+            {member.role && <p className="est-muted">{member.role}</p>}
+            {(member.phone || member.whatsapp) && <p className="est-member-contacts">
+              {member.whatsapp && <a href={whatsappHref(member.whatsapp)} target="_blank" rel="noopener noreferrer">WhatsApp {displayNumber(member.whatsapp)}</a>}
+              {member.phone && <a href={phoneHref(member.phone)}>Call {displayNumber(member.phone)}</a>}
+            </p>}
+          </div>
+        </li>)}
+      </ul>}
+    </div>
+  </section>;
+}
 
 const whatsappHref = (e164: string) => `https://wa.me/${e164.replace(/\D/g, '')}`;
 const phoneHref = (e164: string) => `tel:${e164}`;
@@ -18,7 +53,7 @@ function primaryContact(model: SiteModel): { href: string; external: boolean } |
 }
 
 /**
- * The ONE shared agency website template (D-030): Header, Hero, Contact and Footer in 3b (D-031/D-032).
+ * The ONE shared agency website template (D-030): Header, Hero, the optional sections (3c), Contact and Footer (D-031/D-032).
  * Layout responds to its own width (container queries), so previews at phone width match a real phone.
  * Empty optional parts render nothing — no placeholders, no broken links (D-033).
  */
@@ -32,6 +67,10 @@ export function SiteTemplate({ model }: { model: SiteModel }) {
       <header className="est-header">
         <div className="est-container est-header-inner">
           <span className="est-brand">{model.agencyName}</span>
+          {model.optional.length > 0 && <nav className="est-nav" aria-label="Sections">
+            {model.optional.map((block) => <a key={block.key} href={`#${block.key}`}>{NAV_LABELS[block.key]}</a>)}
+            <a href="#contact">Contact</a>
+          </nav>}
           {contact && <a className="est-button est-button-small" href={contact.href} {...(contact.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
             {model.header.contactButtonLabel}
           </a>}
@@ -47,6 +86,8 @@ export function SiteTemplate({ model }: { model: SiteModel }) {
           {contact && <a className="est-button est-button-on-image" href="#contact">{model.hero.ctaLabel}</a>}
         </div>
       </section>
+
+      {model.optional.map((block) => <OptionalSectionView key={block.key} block={block} />)}
 
       <section className="est-section" id="contact" aria-labelledby="est-contact-title">
         <div className="est-container">
