@@ -21,7 +21,15 @@ Root npm workspaces only: `frontend/` 4000 (public), `admin/` 4001, `super-admin
 
 ## Phase 1 status (2026-10-21, latest)
 
-Phase 1 auth & tenant foundation was implemented by Codex and verified by Claude. Typecheck, lint and build pass for all 4 workspaces, and `npm test -w backend` passes 12/12, including the cross-tenant negative tests. The owner-approved D-115 contract is in `docs/PHASE-1-AUTH-CONTRACT-APPROVED.md`. Committed locally, not pushed. See the top of `docs/AI/HANDOVER-LATEST.md`. Super Admin review and approval features are not started.
+Phase 1 auth & tenant foundation was implemented by Codex and verified by Claude. Typecheck, lint and build pass for all 4 workspaces, and `npm test -w backend` passes 12/12, including the cross-tenant negative tests. The owner-approved D-115 contract is in `docs/PHASE-1-AUTH-CONTRACT-APPROVED.md`. Committed and pushed (`cdec11c`; local HTTPS setup `a9bc10a`). See `docs/AI/HANDOVER-LATEST.md`. Super Admin review is now Phase 2a (below).
+
+## Phase 2a status (2026-10-21)
+
+The Phase 2a Super Admin review lifecycle contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-2A-REVIEW-CONTRACT-APPROVED.md`.
+
+- Built: review state machine with optimistic `reviewVersion` and an append-only `AgencyAudit` written in the same transaction; Super Admin review queue, detail, decisions and reopen; owner status card with Resubmit; the BFF allow-list; and the migration CLI `npm run migrate:review-axes -w backend`, already run on the Atlas dev DB.
+- Checks: typecheck, lint and build pass for all 4 workspaces; `npm test -w backend` passes 26/26; an HTTPS end-to-end round trip passed.
+- Not built yet (Phase 2b and later): Block/Deactivate, website readiness, private preview, publishing, the agency directory. Local dev environment: see `docs/LOCAL-DEV-SETUP.md`.
 
 ## Next gate (written before Phase 1; kept for history)
 

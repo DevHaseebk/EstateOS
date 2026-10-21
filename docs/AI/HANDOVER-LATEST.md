@@ -1,3 +1,49 @@
+# EstateOS — Phase 2a Super Admin review lifecycle: implemented and verified by Claude (2026-10-21)
+
+## Current task
+- Contract: `docs/PHASE-2A-REVIEW-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-21, including the section 8 confirmations.
+- Git: branch `master`, HEAD `a9bc10a` (pushed). **All Phase 2a work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-022, D-064–D-069, D-072, D-073, D-092, D-102, D-115.
+
+## Work completed
+- **Backend**
+  - `models.ts`: Agency adds `reviewVersion`, `submittedForReviewAt`, `latestReview`, `restrictionStatus` (NONE only) and `publicationStatus` (NEVER_PUBLISHED only), plus the queue index. New append-only `AgencyAudit` model; update/delete hooks throw `AUDIT_APPEND_ONLY`.
+  - `review.ts`: transition table, `ownerCanEdit`, owner/review views, and `applyReviewTransition`, which checks the version and transition, does a conditional update and writes the audit in one transaction. Returns 409 `REVIEW_CONFLICT` or `INVALID_TRANSITION`.
+  - `review-routes.ts`: `GET /super-admin/review-queue` (cursor pagination, counts), `GET /super-admin/agencies/:id`, `POST …/review-decisions`, `POST …/reopen`, `POST /owner/review-resubmissions`.
+  - `auth.ts`: exports helpers and `apiGuard`, and the owner agency read includes the review view.
+  - `validation.ts`: reasons are trimmed, 10–1000 characters, and APPROVE takes no reason.
+  - `tenant.ts`: adds `superAdminScope`.
+  - Migration CLI `npm run migrate:review-axes -w backend` (idempotent).
+- **BFF**: allow-lists in both `app/api/v1/[...path]/route.ts`; cross-portal routes return 404.
+- **Super Admin UI**: queue-first home (`components/ReviewQueue.tsx`); one-page `agencies/[agencyId]` review with review status and website readiness shown separately, a disabled private-preview placeholder, a decision area and history; `DecisionDialog.tsx` (desktop dialog, mobile bottom sheet, reason counter). A 409 shows a notice and reloads.
+- **Agency Admin UI**: `components/ReviewStatusCard.tsx` shows a truthful status and the latest reason. Resubmit with confirmation appears only for Changes Requested.
+
+## Verification (Node v24.22.1)
+- `npm run typecheck`, `npm run lint` and `npm run build` (all 4 workspaces) → exit 0.
+- `npm test -w backend` → **26/26** (new: `test/review.test.ts`, 13 tests; `bff.test.ts` +1). Covers:
+  - the transition table, reason edges (9/10/1000/1001/whitespace), and one audit entry per decision;
+  - 422 with no audit for bad reasons; 409 for an invalid transition and a stale version; parallel decisions where exactly one succeeds;
+  - owner resubmit rules, and injected agencyId in the body or header → 422;
+  - reopen requires a reason; owner sessions are rejected on Super Admin routes; CSRF and foreign Origin → 403;
+  - queue order and pagination; unknown agency → 404;
+  - a failed audit write rolls back the status change; audit update/delete are rejected;
+  - the migration backfill is idempotent.
+- `migrate:review-axes` on the Atlas dev DB: 4 field updates, then 0 on a re-run.
+- HTTPS end-to-end check through Caddy with real cookies, using the synthetic test owner:
+  - Super Admin login; the test agency appears in the queue; detail shows PENDING and NOT_READY;
+  - a short reason → 422; Request Changes → 200; a stale repeat → `REVIEW_CONFLICT`;
+  - the owner sees the reason and `canResubmit`; owner → Super Admin route → 404;
+  - Resubmit → PENDING.
+  - The dev agency is back in **PENDING**, with 2 audit entries.
+- Not verified: a visual click-through in Chrome or Edge (the in-app browser refuses `*.localhost`).
+
+## Handoff
+- Not in Phase 2a: Block/Deactivate and the effects of Blocked/Deactivated sessions (Phase 2b), real website readiness, private preview, publishing, the All Agencies directory, notifications.
+- Open: the audit `requestId` is a per-call UUID, not yet a request-wide correlation ID. Queue counts use a full aggregate (fine at pilot scale).
+- Preserve: `reviewVersion` must be supplied on every mutation; audit and status change always happen in one transaction; agencyId never comes from a request.
+
+---
+
 # EstateOS — Local dev environment working (Claude, 2026-10-21)
 
 - MongoDB Atlas free cluster `estateos-dev` (project `EstateOS`, Mumbai), app user `estateos_app`. Secrets only in gitignored `backend/.env`, `admin/.env.local`, `super-admin/.env.local`.

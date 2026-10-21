@@ -57,3 +57,37 @@ test('Super Admin facade uses a separate cookie', async () => {
     assert.doesNotMatch(cookie, /Domain=/i);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Phase 2a review routes are allow-listed per portal only', async () => {
+  const originalFetch = globalThis.fetch;
+  const forwarded: string[] = [];
+  globalThis.fetch = async (input: string | URL | Request) => { forwarded.push(String(input)); return Response.json({ data: {} }); };
+  const agencyId = 'a'.repeat(24);
+  const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
+  try {
+    const queue = await superAdmin.GET(new NextRequest('https://control.estateos.localhost/api/v1/super-admin/review-queue?limit=5'), ctx(['super-admin', 'review-queue']));
+    assert.equal(queue.status, 200);
+    const detail = await superAdmin.GET(new NextRequest(`https://control.estateos.localhost/api/v1/super-admin/agencies/${agencyId}`), ctx(['super-admin', 'agencies', agencyId]));
+    assert.equal(detail.status, 200);
+    for (const action of ['review-decisions', 'reopen']) {
+      const response = await superAdmin.POST(new NextRequest(`https://control.estateos.localhost/api/v1/super-admin/agencies/${agencyId}/${action}`, {
+        method: 'POST', headers: { origin: 'https://control.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+      }), ctx(['super-admin', 'agencies', agencyId, action]));
+      assert.equal(response.status, 200, action);
+    }
+    const resubmit = await owner.POST(new NextRequest('https://admin.estateos.localhost/api/v1/owner/review-resubmissions', {
+      method: 'POST', headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['owner', 'review-resubmissions']));
+    assert.equal(resubmit.status, 200);
+    const forwardedCount = forwarded.length;
+    const ownerToQueue = await owner.GET(new NextRequest('https://admin.estateos.localhost/api/v1/super-admin/review-queue'), ctx(['super-admin', 'review-queue']));
+    assert.equal(ownerToQueue.status, 404);
+    const superToResubmit = await superAdmin.POST(new NextRequest('https://control.estateos.localhost/api/v1/owner/review-resubmissions', {
+      method: 'POST', headers: { origin: 'https://control.estateos.localhost', 'content-type': 'application/json' }, body: '{}',
+    }), ctx(['owner', 'review-resubmissions']));
+    assert.equal(superToResubmit.status, 404);
+    const badId = await superAdmin.GET(new NextRequest('https://control.estateos.localhost/api/v1/super-admin/agencies/not-an-id'), ctx(['super-admin', 'agencies', 'not-an-id']));
+    assert.equal(badId.status, 404);
+    assert.equal(forwarded.length, forwardedCount);
+  } finally { globalThis.fetch = originalFetch; }
+});

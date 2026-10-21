@@ -21,3 +21,18 @@ export const signupSchema = z.strictObject({
 export const loginSchema = z.strictObject({ email, password: z.string().min(1).max(1024) });
 export const resetSchema = z.strictObject({ resetCode: z.string().min(32).max(128), newPassword: z.string().min(12).max(128) })
   .refine((input) => validatePassword(input.newPassword), { message: 'Choose a stronger password', path: ['newPassword'] });
+
+// Phase 2a review contract §5.
+const reviewReason = z.string().trim().min(10, 'Reason must be at least 10 characters').max(1000, 'Reason must be at most 1000 characters');
+const expectedReviewVersion = z.number().int().min(0);
+export const reviewDecisionSchema = z.discriminatedUnion('decision', [
+  z.strictObject({ decision: z.literal('APPROVE'), expectedReviewVersion }),
+  z.strictObject({ decision: z.literal('REQUEST_CHANGES'), reason: reviewReason, expectedReviewVersion }),
+  z.strictObject({ decision: z.literal('REJECT'), reason: reviewReason, expectedReviewVersion }),
+]);
+export const reopenSchema = z.strictObject({ reason: reviewReason, expectedReviewVersion });
+export const resubmitSchema = z.strictObject({ expectedReviewVersion });
+export const reviewQueueQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  cursor: z.string().max(200).optional(),
+});

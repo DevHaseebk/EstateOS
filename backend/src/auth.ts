@@ -8,17 +8,18 @@ import { Agency, AuthRateLimit, AuthSession, User } from './models.js';
 import { digest, hashPassword, normalizeEmail, preAuthCsrf, randomToken, secureEqual, sessionCsrf, verifyPassword } from './security.js';
 import { loginSchema, resetSchema, signupSchema } from './validation.js';
 import { ownerScope, tenantAgencyFilter } from './tenant.js';
+import { ownerReviewView, ReviewError } from './review.js';
 
-type Portal = 'OWNER' | 'SUPER_ADMIN';
+export type Portal = 'OWNER' | 'SUPER_ADMIN';
 type SessionContext = { session: InstanceType<typeof AuthSession>; user: InstanceType<typeof User>; tokenDigest: string };
-type AuthRequest = Request & { portal?: Portal; sessionContext?: SessionContext };
+export type AuthRequest = Request & { portal?: Portal; sessionContext?: SessionContext };
 const router = Router();
 
-class HttpError extends Error {
+export class HttpError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message); }
 }
-const problem = (status: number, code: string, message: string): never => { throw new HttpError(status, code, message); };
-const asyncRoute = (handler: (request: AuthRequest, response: Response) => Promise<void>) =>
+export const problem = (status: number, code: string, message: string): never => { throw new HttpError(status, code, message); };
+export const asyncRoute = (handler: (request: AuthRequest, response: Response) => Promise<void>) =>
   (request: Request, response: Response, next: NextFunction) => { void handler(request as AuthRequest, response).catch(next); };
 
 let dummyHash: Promise<string> | undefined;
@@ -31,7 +32,7 @@ function portalFor(request: AuthRequest): Portal {
   request.portal = portal as Portal;
   return portal as Portal;
 }
-function requirePortal(request: AuthRequest, portal: Portal): void {
+export function requirePortal(request: AuthRequest, portal: Portal): void {
   if (portalFor(request) !== portal) problem(403, 'FORBIDDEN', 'Wrong portal');
 }
 function validateOrigin(request: AuthRequest): void {
@@ -58,7 +59,7 @@ async function countAttempt(kind: string, value: string, durationMs: number): Pr
     throw error;
   }
 }
-async function currentSession(request: AuthRequest, required = true): Promise<SessionContext | undefined> {
+export async function currentSession(request: AuthRequest, required = true): Promise<SessionContext | undefined> {
   const token = request.header('x-session-token');
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
     if (required) problem(401, 'AUTH_REQUIRED', 'Sign in required');
@@ -94,7 +95,7 @@ function preAuthValid(request: AuthRequest): boolean {
   const expected = preAuthCsrf(portalFor(request), nonceValue);
   return secureEqual(request.header('x-csrf-token') ?? '', expected);
 }
-async function requireCsrf(request: AuthRequest, authenticated: boolean): Promise<void> {
+export async function requireCsrf(request: AuthRequest, authenticated: boolean): Promise<void> {
   validateOrigin(request);
   if (!request.is('application/json') && request.method !== 'DELETE') problem(415, 'UNSUPPORTED_MEDIA_TYPE', 'JSON required');
   if (authenticated) {
@@ -104,7 +105,7 @@ async function requireCsrf(request: AuthRequest, authenticated: boolean): Promis
     }
   } else if (!preAuthValid(request)) problem(403, 'CSRF_REJECTED', 'CSRF token invalid');
 }
-function rejectAgencyInput(request: Request): void {
+export function rejectAgencyInput(request: Request): void {
   if (Object.hasOwn(request.query, 'agencyId') || Object.hasOwn(request.body ?? {}, 'agencyId') || request.header('x-agency-id')) {
     problem(422, 'VALIDATION_ERROR', 'agencyId is not accepted');
   }
@@ -113,14 +114,15 @@ function ownerData(user: InstanceType<typeof User>, agency: InstanceType<typeof 
   return { user: { id: user.id, name: user.name, role: user.role }, agency: { id: agency.id, reviewStatus: agency.reviewStatus } };
 }
 
-router.use((request: Request, _response, next) => {
+/** Runs before every /api/v1 router: internal facade key, database availability, portal header, no-store. */
+export function apiGuard(request: Request, response: Response, next: NextFunction): void {
+  response.setHeader('Cache-Control', 'no-store');
   if (!env.internalApiKey || env.internalApiKey.length < 32 || !secureEqual(request.header('x-internal-api-key') ?? '', env.internalApiKey)) {
     next(new HttpError(403, 'FORBIDDEN', 'Protected API'));
     return;
   }
   try { requireDatabase(); portalFor(request as AuthRequest); next(); } catch (error) { next(error); }
-});
-router.use((_request, response, next) => { response.setHeader('Cache-Control', 'no-store'); next(); });
+}
 
 router.get('/auth/csrf', asyncRoute(async (request, response) => {
   if (await countAttempt('csrf', clientIp(request), 60_000) > 30) problem(429, 'RATE_LIMITED', 'Too many requests');
@@ -232,7 +234,7 @@ router.get('/owner/agencies/:agencyId', asyncRoute(async (request, response) => 
   catch { throw new HttpError(404, 'NOT_FOUND', 'Agency not found'); }
   const agency = await Agency.findOne(filter);
   if (!agency) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');
-  response.json({ data: { id: agency.id, name: agency.name, mobile: agency.mobileE164, whatsapp: agency.whatsappE164, reviewStatus: agency.reviewStatus } });
+  response.json({ data: { id: agency.id, name: agency.name, mobile: agency.mobileE164, whatsapp: agency.whatsappE164, reviewStatus: agency.reviewStatus, ...ownerReviewView(agency) } });
 }));
 
 router.post('/auth/recovery/complete', asyncRoute(async (request, response) => {
@@ -264,7 +266,7 @@ export function authErrorHandler(error: unknown, _request: Request, response: Re
   let code = 'INTERNAL_ERROR';
   let message = 'Internal server error';
   let details: Record<string, string> | undefined;
-  if (error instanceof HttpError) { status = error.status; code = error.code; message = error.message; }
+  if (error instanceof HttpError || error instanceof ReviewError) { status = error.status; code = error.code; message = error.message; }
   else if (error instanceof ZodError) {
     status = 422; code = 'VALIDATION_ERROR'; message = 'Invalid request';
     details = Object.fromEntries(error.issues.map((issue) => [issue.path.join('.') || 'request', issue.message]));

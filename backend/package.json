@@ -10,7 +10,8 @@
     "start": "node dist/server.js",
     "bootstrap:super-admin": "tsx src/cli/bootstrap-super-admin.ts",
     "recovery:issue": "tsx src/cli/issue-reset.ts",
-    "test": "tsx --test test/auth.test.ts test/bff.test.ts"
+    "migrate:review-axes": "tsx src/cli/migrate-review-axes.ts",
+    "test": "tsx --test test/auth.test.ts test/review.test.ts test/bff.test.ts"
   },
   "dependencies": {
     "@zxcvbn-ts/core": "^4.2.0",

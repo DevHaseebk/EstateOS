@@ -31,3 +31,14 @@ input { width: 100%; box-sizing: border-box; min-height: 46px; padding: .7rem .8
 .form-error { color: #8a1822; background: #fff0f0; }
 .form-notice { color: #18523d; background: #e8f2ed; }
 @media (max-width: 780px) { .auth-page { grid-template-columns: 1fr; gap: 2rem; padding: 1.5rem; align-items: start; } .auth-intro h1 { max-width: 16ch; } .auth-card { max-width: 560px; width: 100%; box-sizing: border-box; } }
+
+/* Phase 2a review status card */
+.status-card { margin: 1rem 0; padding: 1rem 1.1rem; border-radius: 12px; border: 1px solid #d5ded8; background: #f8faf8; }
+.status-card p { margin: .4rem 0; }
+.status-title { font-weight: 800; font-size: 1.1rem; }
+.status-reason { white-space: pre-wrap; overflow-wrap: anywhere; padding: .7rem .85rem; background: #fff; border-left: 3px solid #126d59; border-radius: 6px; }
+.status-pending { background: #fffaf0; border-color: #ecd9a6; }
+.status-changes_requested { background: #f3f7ff; border-color: #c4d4f2; }
+.status-approved { background: #eef8f2; border-color: #b9dcc7; }
+.status-rejected { background: #fff4f4; border-color: #efc2c5; }
+.confirm-row { margin-top: .5rem; }

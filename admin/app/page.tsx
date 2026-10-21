@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import { ReviewStatusCard } from './components/ReviewStatusCard';
 
 type Mode = 'login' | 'register' | 'recovery';
 type Session = { user: { id: string; name: string; role: string }; agency: { id: string; reviewStatus: string } };
@@ -67,7 +68,7 @@ export default function Home() {
     <section className="auth-card" aria-label="Agency account">
       {loading ? <p role="status">Checking your session…</p> : session ? <>
         <p className="eyebrow">Signed in</p><h2>Welcome, {session.user.name}</h2>
-        <p>Your agency is <strong>{session.agency.reviewStatus.toLowerCase()}</strong>. The private management area will be added later.</p>
+        <ReviewStatusCard agencyId={session.agency.id} />
         <button type="button" className="primary" disabled={busy} onClick={logout}>Sign out</button>
       </> : <>
         <div className="auth-tabs"><button type="button" className={mode === 'login' ? 'selected' : ''} onClick={() => { setMode('login'); setError(''); }}>Sign in</button>
