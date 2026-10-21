@@ -2,7 +2,7 @@
 
 ## Current task
 - Contract: `docs/PHASE-3B-WEBSITE-FOUNDATION-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-21, including the section 10 confirmations.
-- Git: branch `master`, HEAD `9472b76` (pushed). **All Phase 3b work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Git: branch `master`, Phase 3b committed as `b7cbbcc` and pushed to `origin/master` on the owner's instruction.
 - Decisions: D-030–D-043, D-045, D-046, D-048–D-052, D-085, D-089, D-099, D-101, D-102, D-108, D-109, D-110, D-115.
 
 ## Work completed

@@ -47,7 +47,7 @@ Phase 3 is split: 3a Agency Admin shell and Agency Profile; 3b My Website, theme
 
 ## Phase 3b status (2026-10-21)
 
-The Phase 3b contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-3B-WEBSITE-FOUNDATION-CONTRACT-APPROVED.md`.
+The Phase 3b contract is **APPROVED** (2026-10-21) and **implemented and verified by Claude**, committed `b7cbbcc` and pushed: `docs/PHASE-3B-WEBSITE-FOUNDATION-CONTRACT-APPROVED.md`.
 
 - Built: the `WebsiteDraft`; My Website hub, Theme Apply, and the Guided Editor for Header, Hero and Contact (Footer is read-only); D-033 readiness; owner and Super Admin private preview; the D-045 checklist; Profile values mapped into the draft.
 - New library workspace `site-template/`, holding the shared template and the licensed Hero photo list.
