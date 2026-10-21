@@ -4,15 +4,15 @@
   color-scheme: light;
 }
 
-body { margin: 0; background: #f5f5f2; color: #172421; font-family: Arial, Helvetica, sans-serif; }
-button, input { font: inherit; }
+body { margin: 0; background: #f5f5f2; color: #172421; font-family: var(--font-inter), Arial, Helvetica, sans-serif; }
+button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: wait; opacity: .65; }
 button:focus-visible, input:focus-visible { outline: 3px solid #14866d; outline-offset: 3px; }
 .auth-page { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 480px); align-items: center; gap: clamp(2rem, 7vw, 8rem); max-width: 1200px; margin: auto; padding: clamp(1.5rem, 5vw, 5rem); }
 .auth-intro h1 { font-size: clamp(2.5rem, 5vw, 4.6rem); line-height: 1.05; letter-spacing: -.04em; max-width: 11ch; margin: 1rem 0; }
 .auth-intro p:not(.eyebrow) { max-width: 42ch; color: #3d514b; font-size: 1.1rem; line-height: 1.55; }
-.eyebrow { color: #126d59; font-size: .78rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.eyebrow { color: #126d59; font-size: .78rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
 .auth-note { display: inline-block; margin-top: 1.3rem; padding: .8rem 1rem; border-left: 3px solid #14866d; background: #e8f2ed; line-height: 1.5; }
 .auth-card { background: white; border: 1px solid #d5ded8; border-radius: 20px; box-shadow: 0 16px 48px #12271e12; padding: clamp(1.5rem, 4vw, 2.5rem); }
 .auth-card h2 { font-size: 1.6rem; letter-spacing: -.025em; margin: 1.2rem 0; }
@@ -24,7 +24,7 @@ form { display: grid; }
 label { font-weight: 700; margin: .85rem 0 .35rem; }
 input { width: 100%; box-sizing: border-box; min-height: 46px; padding: .7rem .85rem; border: 1px solid #9bab9f; border-radius: 9px; background: #fff; color: #172421; }
 .field-hint { color: #4c6057; font-size: .9rem; margin: .45rem 0 0; }
-.primary { width: 100%; min-height: 48px; padding: .8rem 1rem; margin-top: 1.4rem; border: 0; border-radius: 9px; background: #126d59; color: white; font-weight: 800; }
+.primary { width: 100%; min-height: 48px; padding: .8rem 1rem; margin-top: 1.4rem; border: 0; border-radius: 9px; background: #126d59; color: white; font-weight: 700; }
 .primary:hover { background: #0d5545; }
 .text-button { min-height: 44px; background: none; border: 0; color: #126d59; font-weight: 700; margin-top: .7rem; padding: .4rem 0; }
 .form-error, .form-notice { padding: .8rem 1rem; border-radius: 9px; margin-top: 1rem; }
@@ -35,7 +35,7 @@ input { width: 100%; box-sizing: border-box; min-height: 46px; padding: .7rem .8
 /* Phase 2a review status card */
 .status-card { margin: 1rem 0; padding: 1rem 1.1rem; border-radius: 12px; border: 1px solid #d5ded8; background: #f8faf8; }
 .status-card p { margin: .4rem 0; }
-.status-title { font-weight: 800; font-size: 1.1rem; }
+.status-title { font-weight: 700; font-size: 1.1rem; }
 .status-reason { white-space: pre-wrap; overflow-wrap: anywhere; padding: .7rem .85rem; background: #fff; border-left: 3px solid #126d59; border-radius: 6px; }
 .status-pending { background: #fffaf0; border-color: #ecd9a6; }
 .status-changes_requested { background: #f3f7ff; border-color: #c4d4f2; }
