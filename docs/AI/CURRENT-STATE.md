@@ -71,7 +71,7 @@ Phase 4 is split: 4a automatic first Live and public site; 4b Publish Updates. T
 
 ## Phase 4b status (2026-10-22)
 
-The Phase 4b contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-4B-PUBLISH-UPDATES-CONTRACT-APPROVED.md`.
+The Phase 4b contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude**, committed `b12d832` and pushed: `docs/PHASE-4B-PUBLISH-UPDATES-CONTRACT-APPROVED.md`.
 
 - Built: owner Publish updates (whole saved draft becomes revision n+1, compare-and-swap pointer, idempotent request id, truthful 503); an `unpublishedChanges` content fingerprint; hub badge, confirmation dialog and Try again; post-Live notes; Super Admin revision info.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 99/99; the HTTPS end-to-end check passed on the synthetic Live agency (now revision 2).

@@ -2,7 +2,7 @@
 
 ## Current task
 - Contract: `docs/PHASE-4B-PUBLISH-UPDATES-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 7 confirmations.
-- Git: branch `master`, HEAD `5dd1a19` (pushed). **All Phase 4b work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Git: branch `master`, Phase 4b committed as `b12d832` and pushed to `origin/master` on the owner's instruction.
 - Decisions: D-053, D-054, D-063 (website part), D-079, D-087, D-089, D-090, D-092, D-102, D-107, D-110, D-115.
 
 ## Work completed
