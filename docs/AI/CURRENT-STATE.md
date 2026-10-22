@@ -86,7 +86,7 @@ The Phase 5a contract is **APPROVED** (2026-10-22) and **implemented and verifie
 
 ## Phase 3d status (2026-10-22)
 
-The Phase 3d contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-3D-PHOTO-UPLOADS-CONTRACT-APPROVED.md`.
+The Phase 3d contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude**, committed `ca6cc42` and pushed: `docs/PHASE-3D-PHOTO-UPLOADS-CONTRACT-APPROVED.md`.
 
 - Built: the storage interface with a local-disk driver (`backend/.media-dev/`, gitignored); `sharp` processing to WebP 480/960/1600 with metadata stripped and private originals; staged uploads attached on save and expired after 24 hours; Hero upload (satisfies readiness), logo, and the property gallery; public images only from the current Live revision.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 123/123; the HTTPS end-to-end check passed with a real uploaded Hero, **with no fixture**.

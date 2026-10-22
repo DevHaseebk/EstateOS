@@ -2,7 +2,7 @@
 
 ## Current task
 - Contract: `docs/PHASE-3D-PHOTO-UPLOADS-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 7 confirmations.
-- Git: branch `master`, HEAD `6c38d62` (pushed). **All Phase 3d work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Git: branch `master`, Phase 3d committed as `ca6cc42` and pushed to `origin/master` on the owner's instruction.
 - Decisions: D-033, D-035, D-059, D-060, D-084, D-086, D-089, D-090, D-105 (interface), D-106, D-107, D-108, D-110, D-111, D-115.
 
 ## Work completed
