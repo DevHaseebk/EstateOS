@@ -94,7 +94,7 @@ The Phase 3d contract is **APPROVED** (2026-10-22) and **implemented and verifie
 
 ## Phase 3e status (2026-10-22)
 
-The Phase 3e contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-3E-ABOUT-TEAM-PHOTOS-CONTRACT-APPROVED.md`.
+The Phase 3e contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude**, committed `a7e5cac` and pushed: `docs/PHASE-3E-ABOUT-TEAM-PHOTOS-CONTRACT-APPROVED.md`.
 
 - Built: media purposes ABOUT (at least 800×500) and TEAM (at least 300×300) on the 3d pipeline; an optional About photo; an optional photo per team member that needs the "agreed to show their photo" tick; photos are public only after Publish and only while their section is shown.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 129/129; the HTTPS end-to-end check on the 3d synthetic agency passed.
