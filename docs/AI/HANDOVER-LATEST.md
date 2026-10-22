@@ -2,7 +2,7 @@
 
 ## Current task
 - Contract: `docs/PHASE-6A-ADMIN-CREATED-AGENCY-INVITATION-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 6 confirmations.
-- Git: branch `master`, HEAD `3ecd17a` (pushed). **All Phase 6a work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Git: branch `master`. Phase 6a committed as `f5bcb01` and pushed to `origin/master` on the owner's instruction.
 - Decisions: D-028, D-072, D-088, D-089, D-092, D-097, D-098, D-111, D-113, D-115, D-116, D-118.
 
 ## Work completed

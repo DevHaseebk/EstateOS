@@ -102,7 +102,7 @@ The Phase 3e contract is **APPROVED** (2026-10-22) and **implemented and verifie
 
 ## Phase 6a status (2026-10-22)
 
-The Phase 6a contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-6A-ADMIN-CREATED-AGENCY-INVITATION-CONTRACT-APPROVED.md`.
+The Phase 6a contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude**, committed `f5bcb01` and pushed: `docs/PHASE-6A-ADMIN-CREATED-AGENCY-INVITATION-CONTRACT-APPROVED.md`.
 
 - Built: Super Admin **Create agency** (Pending, `origin` ADMIN_CREATED, owner `INVITED` with no password); a single-use 72-hour invitation link (code in the `#fragment`, only its digest stored), shown once; **Issue a new link** cancels the old one; the owner `/invite` page (preview, choose a password, then normal sign-in); everything audited on a new `ACCOUNT` audit axis.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 137/137; the HTTPS end-to-end check (create → claim → sign in → approve) passed.
