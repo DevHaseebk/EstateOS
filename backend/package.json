@@ -11,10 +11,13 @@
     "bootstrap:super-admin": "tsx src/cli/bootstrap-super-admin.ts",
     "recovery:issue": "tsx src/cli/issue-reset.ts",
     "migrate:review-axes": "tsx src/cli/migrate-review-axes.ts",
-    "test": "tsx --test test/auth.test.ts test/review.test.ts test/restriction.test.ts test/profile.test.ts test/website.test.ts test/website-sections.test.ts test/publication.test.ts test/publish.test.ts test/properties.test.ts test/media.test.ts test/about-team-photos.test.ts test/invitations.test.ts test/pilot-fixes.test.ts test/frontend-public.test.ts test/bff.test.ts",
-    "reconcile:activations": "tsx src/cli/reconcile-activations.ts"
+    "test": "tsx --test test/auth.test.ts test/review.test.ts test/restriction.test.ts test/profile.test.ts test/website.test.ts test/website-sections.test.ts test/publication.test.ts test/publish.test.ts test/properties.test.ts test/media.test.ts test/about-team-photos.test.ts test/invitations.test.ts test/pilot-fixes.test.ts test/storage.test.ts test/media-s3.test.ts test/deploy-readiness.test.ts test/backup.test.ts test/frontend-public.test.ts test/bff.test.ts",
+    "reconcile:activations": "tsx src/cli/reconcile-activations.ts",
+    "backup": "tsx src/cli/backup.ts",
+    "restore": "tsx src/cli/restore.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1155.0",
     "@zxcvbn-ts/core": "^4.2.0",
     "@zxcvbn-ts/language-common": "^4.1.3",
     "argon2": "^0.45.1",

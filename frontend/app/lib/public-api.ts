@@ -6,7 +6,8 @@ export type PublishedSite = { site: SiteContent; revision: number; publishedAt: 
 export async function fetchPublishedSite(slug: string): Promise<PublishedSite | null> {
   const key = process.env.PUBLIC_API_KEY;
   if (!key || key.length < 32) throw new Error('PUBLIC_API_KEY is not configured');
-  const api = process.env.API_URL ?? 'http://127.0.0.1:4003';
+  // Phase 7a §1 Q4: one name for the backend URL; API_URL is accepted for one more release.
+  const api = process.env.BACKEND_INTERNAL_URL ?? process.env.API_URL ?? 'http://127.0.0.1:4003';
   // No caching in 4a: every request reads the current Live revision, so restrictions apply at once (§1 Q7).
   const response = await fetch(`${api}/api/v1/public/sites/${encodeURIComponent(slug)}`, {
     headers: { 'x-public-api-key': key }, cache: 'no-store', signal: AbortSignal.timeout(8000),

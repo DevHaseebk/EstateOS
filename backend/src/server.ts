@@ -1,8 +1,11 @@
 import { app } from './app.js';
 import { connectDatabase } from './config/database.js';
-import { env } from './config/env.js';
+import { assertProductionConfig, env } from './config/env.js';
 import { startReconciler } from './publication.js';
 import { cleanupStagedMedia } from './media.js';
+
+// Phase 7a §1 Q2: refuse to start in production with development defaults (the message names settings, never values).
+assertProductionConfig();
 
 app.listen(env.port, env.bindHost, (error?: Error) => {
   if (error) {
@@ -12,6 +15,8 @@ app.listen(env.port, env.bindHost, (error?: Error) => {
   }
   console.info(`EstateOS API listening on http://localhost:${env.port}`);
   void connectDatabase();
+  // Phase 7a §1 Q5: extra instances set RUN_BACKGROUND_JOBS=false so only one runs the jobs.
+  if (!env.runBackgroundJobs) { console.info('Background jobs are off for this instance (RUN_BACKGROUND_JOBS=false)'); return; }
   // Phase 4a §3: retries missed or failed first activations every 5 minutes.
   startReconciler();
   // Phase 3d §1 Q5: staged uploads never attached within 24 hours are removed hourly.

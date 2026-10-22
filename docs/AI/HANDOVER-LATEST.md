@@ -1,3 +1,61 @@
+# EstateOS — Phase 7a deploy readiness: implemented and verified by Claude (2026-10-22)
+
+## Current task
+- Contract: `docs/PHASE-7A-DEPLOY-READINESS-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 5 confirmations. Umbrella: the Codex draft `docs/PHASE-7-STAGING-DEPLOYMENT-CONTRACT-PROPOSED.md` (unchanged).
+- Git: branch `master`, HEAD `4a9ba4d` (pushed, the Codex browser-gate record). **Uncommitted:** all Phase 7a work, plus the Codex Phase 7 draft and its CURRENT-STATE/HANDOVER entries (kept below). Commit and push only on the owner's instruction.
+- Review of the Codex work: docs only, no code; accurate on code facts. Correction to Claude's own review: the admin and Super Admin BFFs **already** answered 503 in production without `TRUSTED_CLIENT_IP_HEADER` (error code `AUTH_UNAVAILABLE`), so that code was kept and only tested; the shared `unknown` IP only affects development without Caddy.
+- Decisions: D-081, D-088, D-093, D-094, D-105, D-111, D-112, D-114, D-115, D-116.
+
+## Work completed
+- **Storage** (`backend/src/storage.ts`):
+  - `MediaStorage` gains `check()`; `LocalDiskStorage` is exported;
+  - new `S3Storage` (path-style, checksums only when required, `NoSuchKey` → null, same key rules);
+  - `s3SettingsFromEnv` names the missing setting;
+  - `MEDIA_STORAGE=local|s3`.
+- **Config and runtime:**
+  - `config/env.ts`: `productionConfigProblems` / `assertProductionConfig` (only when `NODE_ENV=production`; messages name settings, never values) and `runBackgroundJobs`;
+  - `server.ts` asserts before `listen` and skips the reconciler and cleanup when `RUN_BACKGROUND_JOBS=false`;
+  - `app.ts` adds `GET /api/ready` (no-store; 200 `ready` / 503 `not_ready`); `/api/health` is unchanged.
+- **Public site**: `public-api.ts` and the image proxy read `BACKEND_INTERNAL_URL ?? API_URL`.
+- **Backups** (`backend/src/backup.ts`, `cli/backup.ts`, `cli/restore.ts`, scripts `backup`/`restore`):
+  - the file is `[header length][header JSON][IV][GCM tag][AES-256-GCM(gzip(EJSON collections + indexes))]`, with the header authenticated as additional data;
+  - restore checks the key and tag, refuses the source database (`sameDatabase`) and a non-empty target, all before writing; then inserts in batches and recreates the indexes.
+  - Note: backups include `authsessions` and `authratelimits` (digests only, encrypted).
+- **Files**: `.github/workflows/ci.yml` (Node 24, `npm ci`, typecheck, lint, build, backend tests; read-only permissions; no secrets); `.env.example` for backend/admin/super-admin/frontend (the frontend one replaces an unused `NEXT_PUBLIC_API_BASE_URL`); `docs/DEPLOYMENT-RUNBOOK.md` (settings, secret rotation, release, smoke checks, rollback, backup, restore drill; provider steps marked [7b]).
+- **Tests**:
+  - new `test/storage.test.ts` (one contract suite for both drivers against `test/fixtures/fake-s3.ts`, which refuses unsigned requests);
+  - `test/media-s3.test.ts` (the whole media suite on S3);
+  - `test/deploy-readiness.test.ts` (config cases, ready, real server start with jobs off and a refused production start, BFF trusted IP, backend URL);
+  - `test/backup.test.ts` (round-trip identical, refusals);
+  - `media.test.ts` now checks stored objects through the storage interface instead of reading the disk.
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (5 workspaces) → exit 0. `npm test -w backend` → **164/164**.
+- Local HTTPS with `MEDIA_STORAGE=local`: `/api/ready` 200; the public site, admin and control hosts 200; the hero image 200 image/webp.
+- Backup drill on the synthetic dev database with a throwaway key: backup → `backups/…` (≈10.8 KB); a wrong key is refused; restore into a scratch in-memory database → identical counts for all 10 collections; a second restore into the now non-empty target is refused; the drill file was deleted.
+- The CI YAML parses; it has not run on GitHub yet. npm 11 lists install scripts (argon2, esbuild, mongodb-memory-server, unrs-resolver) as not covered by `allowScripts`; watch the first CI run.
+
+## Handoff
+- Phase 7b needs the owner's choices (the Codex draft §6): domain and DNS, hosting, bucket, database users, secrets, backup schedule and key custody, monitoring, and the first staging deployment and UAT. D-117 privacy before real users.
+- Preserve: production must never start with development defaults; images stay behind the API's checks with a private bucket; restore only into an empty, non-source database.
+
+---
+
+# EstateOS — Phase 6b pushed; Phase 7 proposal drafted by Codex (2026-10-22)
+
+## Scope and Git
+- Owner explicitly asked to push the completed work and move to the next phase. Branch `master`; Phase 6b browser-gate docs were committed as `4a9ba4d` and pushed successfully to `origin/master` (`4f9665f..4a9ba4d`).
+- Next work is a **proposal**, not an approved implementation milestone: `docs/PHASE-7-STAGING-DEPLOYMENT-CONTRACT-PROPOSED.md`. This file and the new current-state/handover updates are uncommitted. No application code, secrets, cloud services or dev database records were changed in this step.
+- Decisions checked: D-075, D-081, D-088/D-089, D-093/D-094, D-105, D-107, D-111/D-112, D-114–D-117. Used the confirmed v5.9 map and relevant canonical specs, plus current backend storage, config, BFF and public media routes.
+
+## Result and next gate
+- Draft covers isolated staging and production topology, protected API/host boundaries, managed-media migration, the existing five-minute public-image cache, automated release evidence, encrypted daily DB backup with a tested restore, rollback limits and synthetic staging UAT.
+- Owner choices remain OPEN: domains/DNS/TLS, hosting/ingress and CI/CD, managed MongoDB and media supplier, CDN or no CDN, backup retention/keys/RPO/RTO/operator, logs/alerts, and D-117 privacy/legal text and request process. Cloudflare R2 in older notes is a recommendation, not an approved supplier.
+- Review and approve a completed D-115 Phase 7 implementation contract after these choices. Do not provision/deploy or add new REST behavior from this proposal. Preserve automatic first Live, deliberate post-Live Publish Updates, trusted tenant scoping and the five-minute image cache unless a tested purge policy is separately approved.
+- Verification for this doc-only step: source/docs/Git inspection; no typecheck, lint, build, API tests, staging smoke or backup restore was run. Prior Phase 6b check results are recorded below.
+
+---
+
 # EstateOS — Phase 6b browser gate completed by Codex (2026-10-22)
 
 ## Scope and Git

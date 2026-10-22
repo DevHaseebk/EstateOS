@@ -4,7 +4,8 @@ export async function GET(_request: Request, context: { params: Promise<{ mediaI
   if (!/^[a-f0-9]{32}$/.test(mediaId) || !/^\d{2,4}$/.test(width)) return new Response('Not found', { status: 404 });
   const key = process.env.PUBLIC_API_KEY;
   if (!key || key.length < 32) return new Response('Unavailable', { status: 503 });
-  const api = process.env.API_URL ?? 'http://127.0.0.1:4003';
+  // Phase 7a §1 Q4: one name for the backend URL; API_URL is accepted for one more release.
+  const api = process.env.BACKEND_INTERNAL_URL ?? process.env.API_URL ?? 'http://127.0.0.1:4003';
   const upstream = await fetch(`${api}/api/v1/public/media/${mediaId}/${width}`, { headers: { 'x-public-api-key': key }, cache: 'no-store', signal: AbortSignal.timeout(8000) })
     .catch(() => null);
   if (!upstream?.ok || !upstream.headers.get('content-type')?.startsWith('image/')) return new Response('Not found', { status: 404 });

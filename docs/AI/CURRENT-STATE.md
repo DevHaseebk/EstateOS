@@ -115,6 +115,19 @@ A Codex review of Phases 0–6a was checked against the code. The resulting Phas
 - Fixed: public images `public, max-age=300` (was one year immutable); revisions hold only the shown properties (newest `displayCount`, none while hidden) and only their photos are public; 30 failed sign-ins per account per 15 minutes across IPs; the upload error names all five purposes; truthful Overview action, review cards, editor intro, Approve/Restore dialogs and invited-owner status; editor sections grouped into Essentials and Optional sections.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 142/142; the HTTPS check on the 3d synthetic agency passed (cache header; a hidden Properties section makes its photo 404 after Publish).
 - **Browser gate completed (Codex, 2026-10-22):** Chrome opened the trusted local HTTPS hosts with signed-in synthetic accounts. Desktop and 390×844 mobile checks covered the Super Admin review queue, All agencies directory, Create agency form, agency detail, and Approve confirmation, plus the owner Live Overview, mobile Menu, My Website hub, and grouped editor. No blocking layout or wording defect was observed. The confirmation was cancelled; no agency, review, restriction, or website data was changed. The existing dev invitation had already been claimed, so the INVITED panel and Restore dialog were not visually exercised; their API/component behavior remains covered by the existing tests. The in-app browser still rejects the local certificate, so Chrome was used for this gate.
+- The browser-gate record was committed as `4a9ba4d` and pushed to `origin/master` on the owner's instruction.
+
+## Phase 7 status (2026-10-22)
+
+`docs/PHASE-7-STAGING-DEPLOYMENT-CONTRACT-PROPOSED.md` is a **PROPOSED, uncommitted** staging/deployment contract for owner review. It reconciles the confirmed deployment, storage, cache, backup, synthetic-data and privacy policies with the current local-disk/media and localhost runtime. No Phase 7 application code, infrastructure or production deployment has been authorized or changed. Hosting/domain, storage, CDN, backup, operational ownership and D-117 privacy/legal details remain OPEN; the proposal lists exact decisions and staging acceptance evidence needed before implementation and pilot launch.
+
+## Phase 7a status (2026-10-22)
+
+Claude reviewed the Codex Phase 7 draft (kept as the staging/production umbrella) and the Phase 7a deploy-readiness contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-7A-DEPLOY-READINESS-CONTRACT-APPROVED.md`.
+
+- Built: an S3-compatible `MediaStorage` driver (`MEDIA_STORAGE=s3`, private bucket, `@aws-sdk/client-s3`); `assertProductionConfig` (production refuses development defaults, short or equal keys, local storage); `GET /api/ready` (503 unless the database and storage answer); `RUN_BACKGROUND_JOBS`; `BACKEND_INTERNAL_URL` for the public site too (`API_URL` fallback); encrypted backup/restore CLIs (`npm run backup|restore -w backend`, AES-256-GCM, restore only into an empty non-source database); `.github/workflows/ci.yml`; refreshed `.env.example` files; `docs/DEPLOYMENT-RUNBOOK.md`.
+- Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 164/164 (the whole media suite also runs against an in-process fake S3); local HTTPS still works with local storage; a manual backup of the synthetic dev database restored into a scratch database with identical counts (10 collections).
+- Not done: the CI workflow has not run on GitHub yet (first push); provisioning and the first deployment are Phase 7b.
 
 ## History
 

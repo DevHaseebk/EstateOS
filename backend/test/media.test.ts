@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
@@ -23,6 +23,8 @@ let mediaDir: string;
 let app: Awaited<typeof import('../src/app.js')>['app'];
 let models: typeof import('../src/models.js');
 let media: typeof import('../src/media.js');
+// Phase 7a: assertions go through the storage interface, so this suite also runs against the S3 driver (media-s3.test.ts).
+let storage: typeof import('../src/storage.js');
 let superToken = '';
 let ipCounter = 10;
 const nextIp = () => `10.8.${Math.floor(ipCounter / 250)}.${(ipCounter++ % 250) + 1}`;
@@ -100,6 +102,7 @@ before(async () => {
   app = (await import('../src/app.js')).app;
   models = await import('../src/models.js');
   media = await import('../src/media.js');
+  storage = await import('../src/storage.js');
   const security = await import('../src/security.js');
   mongo = await MongoMemoryReplSet.create({ replSet: { count: 1 } });
   await mongoose.connect(mongo.getUri());
@@ -169,8 +172,7 @@ test('upload stages privately: owner sees it, another agency and the public do n
   assert.equal((await authedGet('OWNER', b.token, `/api/v1/owner/media/${id}/960`)).status, 404);
   assert.equal((await authedGet('SUPER_ADMIN', superToken, `/api/v1/super-admin/media/${id}/960`)).status, 404, 'staged media is not visible to the Super Admin');
   assert.equal((await publicMedia(id)).status, 404);
-  const files = await readdir(path.join(mediaDir, 'originals', a.agencyId));
-  assert.deepEqual(files, [id]);
+  assert.deepEqual(await storage.mediaStorage().get(`originals/${a.agencyId}/${id}`), original, 'the private original is stored under the agency');
 });
 
 test('upload validation errors are clear and per file; wrong content types are refused', async () => {
@@ -286,6 +288,8 @@ test('cleanup removes stale staged uploads with their files and never touches at
   const fresh = (await upload(owner.token, 'PROPERTY', await image(400, 300))).body.data.media.id as string;
   const attached = (await upload(owner.token, 'PROPERTY', await image(400, 300))).body.data.media.id as string;
   assert.equal((await authed('post', 'OWNER', owner.token, '/api/v1/owner/properties', house([attached]))).status, 201);
+  const staleRecord = await models.Media.findOne({ mediaId: stale }).lean();
+  const attachedRecord = await models.Media.findOne({ mediaId: attached }).lean();
   const old = new Date(Date.now() - 25 * 60 * 60_000);
   await models.Media.collection.updateMany({ mediaId: { $in: [stale, attached] } }, { $set: { createdAt: old } });
   const removed = await media.cleanupStagedMedia();
@@ -293,10 +297,12 @@ test('cleanup removes stale staged uploads with their files and never touches at
   assert.equal(await models.Media.countDocuments({ mediaId: stale }), 0);
   assert.equal(await models.Media.countDocuments({ mediaId: fresh }), 1);
   assert.equal(await models.Media.countDocuments({ mediaId: attached }), 1);
-  const leftover = await readdir(path.join(mediaDir, 'variants', stale)).catch(() => [] as string[]);
-  assert.deepEqual(leftover, [], 'no variant files remain for the removed upload');
-  assert.deepEqual(await readdir(path.join(mediaDir, 'originals', owner.agencyId)).then((files) => files.includes(stale)), false);
-  assert.ok((await readdir(path.join(mediaDir, 'variants', attached))).length > 0);
+  for (const key of [staleRecord!.originalKey, ...staleRecord!.variants.map((variant) => variant.key)]) {
+    assert.equal(await storage.mediaStorage().get(key), null, `removed: ${key}`);
+  }
+  for (const key of [attachedRecord!.originalKey, ...attachedRecord!.variants.map((variant) => variant.key)]) {
+    assert.ok(await storage.mediaStorage().get(key), `kept: ${key}`);
+  }
 });
 
 test('permissions and the upload rate limit', async () => {
