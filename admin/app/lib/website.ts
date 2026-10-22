@@ -40,3 +40,40 @@ export function websiteStatus(website: WebsiteData, reviewStatus: string): { lab
 
 /** Phase 3d: the owner's own images (staged or attached) through the Agency Admin BFF. */
 export const ownerMediaUrl = (mediaId: string, width: 480 | 960 | 1600) => `/api/v1/owner/media/${mediaId}/${width}`;
+
+export type NextAction = { label: string; href: string; external?: boolean };
+/**
+ * Phase 6b §1 Q4: the ONE Overview action (D-047), from the real state; the first match wins.
+ * Returns null until the profile has loaded.
+ */
+export function overviewAction(input: {
+  profile: { publicContact: { showMobile: boolean; showWhatsapp: boolean }; canEdit: boolean } | null;
+  website: WebsiteData | null; reviewStatus: string; restrictionStatus?: string;
+}): NextAction | null {
+  const { profile, website, reviewStatus, restrictionStatus } = input;
+  if (!profile) return null;
+  if (restrictionStatus === 'DEACTIVATED' || !profile.canEdit) return { label: 'View agency details', href: '/profile' };
+  if (reviewStatus === 'CHANGES_REQUESTED') return { label: 'Complete your agency details', href: '/profile' };
+  if (!profile.publicContact.showMobile && !profile.publicContact.showWhatsapp) return { label: 'Choose a public number', href: '/profile' };
+  if (!website) return null;
+  const publication = website.publication;
+  if (publication?.status === 'LIVE') {
+    if (publication.unpublishedChanges) return { label: 'Review and publish updates', href: '/website' };
+    if (publication.url) return { label: 'Open your website', href: publication.url, external: true };
+  }
+  if (!website.readiness.ready) return { label: 'Finish your website', href: ISSUE_LINKS[website.readiness.issues[0]?.key ?? '']?.href ?? '/website' };
+  return { label: 'Preview your website', href: '/website/preview' };
+}
+
+/** Phase 6b §3: the review card text for an approved agency, from the real website state. */
+export function approvedText(state: ReturnType<typeof approvedWebsiteState>): string {
+  return 'Your agency is approved.' + (state === 'LIVE' ? ' Your website is live.'
+    : state === 'GOING_LIVE' ? ' Your website is going live now.' : state === 'NOT_READY' ? ' Your website goes live as soon as the essentials are finished.' : '');
+}
+
+/** Phase 6b §3: the website state the review card describes for an approved agency. */
+export function approvedWebsiteState(website: WebsiteData | null): 'LIVE' | 'GOING_LIVE' | 'NOT_READY' | null {
+  if (!website) return null;
+  if (website.publication?.status === 'LIVE') return 'LIVE';
+  return website.publication?.status === 'ACTIVATION_PENDING' || website.readiness.ready ? 'GOING_LIVE' : 'NOT_READY';
+}

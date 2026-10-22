@@ -211,7 +211,7 @@ test('Hero upload is attached on save, satisfies readiness and takes a ready app
   const live = await publicMedia(hero, 1600);
   assert.equal(live.status, 200);
   assert.equal(live.headers['content-type'], 'image/webp');
-  assert.match(live.headers['cache-control'], /public, max-age=31536000, immutable/);
+  assert.equal(live.headers['cache-control'], 'public, max-age=300', 'Phase 6b: short public cache');
   assert.equal(live.headers['set-cookie'], undefined);
   assert.equal((await authedGet('SUPER_ADMIN', superToken, `/api/v1/super-admin/media/${hero}/960`)).status, 200);
 });
@@ -264,6 +264,10 @@ test('public images: only those in the current Live revision; draft-only photos 
   assert.equal((await publicMedia(hero)).status, 200);
   const photo = (await upload(owner.token, 'PROPERTY', await image(600, 400))).body.data.media.id as string;
   assert.equal((await authed('post', 'OWNER', owner.token, '/api/v1/owner/properties', house([photo]))).status, 201);
+  // Phase 6b §1 Q2: property photos are public only while the Properties section is shown.
+  assert.equal((await authed('put', 'OWNER', owner.token, '/api/v1/owner/website/layout', {
+    order: ['about', 'services', 'properties', 'whyChooseUs', 'team'], visible: { about: false, services: false, whyChooseUs: false, team: false, properties: true }, expectedLayoutVersion: 0,
+  })).status, 200);
   assert.equal((await publicMedia(photo)).status, 404, 'saved but not published yet');
   assert.equal((await authed('post', 'OWNER', owner.token, '/api/v1/owner/website/publish', { expectedLiveRevision: 1, requestId: randomUUID() })).status, 200);
   assert.equal((await publicMedia(photo)).status, 200);

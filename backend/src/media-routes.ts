@@ -12,7 +12,11 @@ const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MEDIA_ID = /^[a-f0-9]{32}$/;
 const notFound = () => new HttpError(404, 'NOT_FOUND', 'Image not found');
 
-/** Streams one stored WebP variant. Keys are immutable, so images may be cached; `scope` decides who may cache. */
+/**
+ * Streams one stored WebP variant; `scope` decides who may cache. Public images are cached for 5 minutes only (Phase 6b §1 Q1),
+ * so a Block, Deactivate or removed photo stops being served soon after; longer caching waits for a CDN with purge.
+ */
+export const PUBLIC_IMAGE_CACHE = 'public, max-age=300';
 export async function sendVariant(response: Response, variants: { width: number; key: string }[], width: string, scope: 'private' | 'public') {
   const requested = Number(width);
   if (!Number.isInteger(requested) || requested < 1 || requested > 4000) throw notFound();
@@ -20,7 +24,7 @@ export async function sendVariant(response: Response, variants: { width: number;
   const body = variant ? await mediaStorage().get(variant.key) : null;
   if (!body) throw notFound();
   response.setHeader('Content-Type', 'image/webp');
-  response.setHeader('Cache-Control', scope === 'public' ? 'public, max-age=31536000, immutable' : 'private, max-age=3600');
+  response.setHeader('Cache-Control', scope === 'public' ? PUBLIC_IMAGE_CACHE : 'private, max-age=3600');
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.end(body);
 }
@@ -32,7 +36,7 @@ router.post('/owner/media', express.raw({ type: IMAGE_TYPES, limit: MAX_UPLOAD_B
   requireOwnerWritable(request);
   if (Object.hasOwn(request.query, 'agencyId') || request.header('x-agency-id')) throw new HttpError(422, 'VALIDATION_ERROR', 'agencyId is not accepted');
   const purpose = String(request.query.purpose ?? '') as MediaPurpose;
-  if (!MEDIA_PURPOSES.includes(purpose)) throw new ReviewError(422, 'VALIDATION_ERROR', 'Choose what the image is for (HERO, LOGO or PROPERTY).');
+  if (!MEDIA_PURPOSES.includes(purpose)) throw new ReviewError(422, 'VALIDATION_ERROR', 'Choose what the image is for: Hero, logo, property, About or team photo.');
   const scope = ownerScope(request.sessionContext!.user);
   const agency = await Agency.findOne(tenantAgencyFilter(scope)).select('reviewStatus restrictionStatus').lean();
   if (!agency) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');

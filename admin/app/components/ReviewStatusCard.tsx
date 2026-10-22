@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { approvedText, type approvedWebsiteState } from '../lib/website';
 
 type Review = { status: string; version: number; latestReview: { action: string; reason?: string; decidedAt: string } | null };
 type AgencyReview = { name: string; review: Review; canResubmit: boolean; canEdit: boolean; restriction: { status: string; reason?: string } };
@@ -13,7 +14,9 @@ function messageFrom(payload: ErrorPayload, fallback: string): string {
 
 // D-067/D-068/D-073: truthful review status, the latest reason, and Resubmit only after Request Changes.
 // Phase 2b: a Deactivated agency is read-only; a Blocked agency loses its session (onSessionEnded).
-export function ReviewStatusCard({ agencyId, onSessionEnded, onStatusChange }: { agencyId: string; onSessionEnded: () => void; onStatusChange?: () => void }) {
+export function ReviewStatusCard({ agencyId, websiteState, onSessionEnded, onStatusChange }: {
+  agencyId: string; websiteState?: ReturnType<typeof approvedWebsiteState>; onSessionEnded: () => void; onStatusChange?: () => void;
+}) {
   const [agency, setAgency] = useState<AgencyReview | null>(null);
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
@@ -67,14 +70,14 @@ export function ReviewStatusCard({ agencyId, onSessionEnded, onStatusChange }: {
     {status === 'CHANGES_REQUESTED' && <>
       <p className="status-title">Changes requested</p>
       {latestReview?.reason && <p className="status-reason">{latestReview.reason}</p>}
-      <p>After making the requested changes, resubmit your agency for review. Editing tools are coming soon; contact EstateOS support if you need a change made now.</p>
+      <p>Update your agency details or website, then resubmit for review.</p>
       {agency.canResubmit && (confirming ? <div className="confirm-row">
         <p>Send your agency back for review now?</p>
         <button type="button" className="primary" disabled={busy} onClick={resubmit}>{busy ? 'Please wait…' : 'Yes, resubmit for review'}</button>
         <button type="button" className="text-button" disabled={busy} onClick={() => setConfirming(false)}>Cancel</button>
       </div> : <button type="button" className="primary" onClick={() => setConfirming(true)}>Resubmit for review</button>)}
     </>}
-    {status === 'APPROVED' && <><p className="status-title">Approved</p><p>Your agency is approved. Your website is not live yet — the website builder is coming next.</p></>}
+    {status === 'APPROVED' && <><p className="status-title">Approved</p><p>{approvedText(websiteState ?? null)}</p></>}
     {status === 'REJECTED' && <>
       <p className="status-title">Not approved</p>
       {latestReview?.reason && <p className="status-reason">{latestReview.reason}</p>}

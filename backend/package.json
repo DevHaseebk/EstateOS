@@ -11,7 +11,7 @@
     "bootstrap:super-admin": "tsx src/cli/bootstrap-super-admin.ts",
     "recovery:issue": "tsx src/cli/issue-reset.ts",
     "migrate:review-axes": "tsx src/cli/migrate-review-axes.ts",
-    "test": "tsx --test test/auth.test.ts test/review.test.ts test/restriction.test.ts test/profile.test.ts test/website.test.ts test/website-sections.test.ts test/publication.test.ts test/publish.test.ts test/properties.test.ts test/media.test.ts test/about-team-photos.test.ts test/invitations.test.ts test/frontend-public.test.ts test/bff.test.ts",
+    "test": "tsx --test test/auth.test.ts test/review.test.ts test/restriction.test.ts test/profile.test.ts test/website.test.ts test/website-sections.test.ts test/publication.test.ts test/publish.test.ts test/properties.test.ts test/media.test.ts test/about-team-photos.test.ts test/invitations.test.ts test/pilot-fixes.test.ts test/frontend-public.test.ts test/bff.test.ts",
     "reconcile:activations": "tsx src/cli/reconcile-activations.ts"
   },
   "dependencies": {

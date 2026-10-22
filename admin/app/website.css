@@ -43,7 +43,10 @@
 .segmented button { min-height: 40px; padding: 0 .9rem; border: 0; background: #fff; font-weight: 600; }
 .segmented button[aria-pressed="true"] { background: #126d59; color: #fff; }
 .editor-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 1.25rem; align-items: start; }
-.section-list { display: grid; gap: .5rem; position: sticky; top: 1rem; }
+.section-list { display: grid; gap: 1rem; position: sticky; top: 1rem; }
+/* Phase 6b: Essentials and Optional sections groups. */
+.section-group { display: grid; gap: .5rem; }
+.section-group-title { margin: 0; color: #126d59; font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .section-list button:not(.secondary) { display: grid; gap: .15rem; text-align: left; padding: .75rem .9rem; min-height: 44px; background: #fff; border: 1px solid #d5ded8; border-radius: 12px; color: #172421; }
 .section-list button[aria-current="true"] { border-color: #126d59; box-shadow: inset 4px 0 0 #126d59; }
 .section-list button span { color: #4c6057; font-size: .85rem; }
@@ -80,7 +83,9 @@ select { width: 100%; box-sizing: border-box; min-height: 46px; padding: .6rem .
 .shown-badge.on { background: #e3f1eb; color: #0f5a4a; }
 @media (max-width: 1023px) {
   .editor-layout { grid-template-columns: 1fr; }
-  .section-list { position: static; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .section-list { position: static; }
+  .section-group { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .section-group-title { grid-column: 1 / -1; }
 }
 
 /* Phase 4b: Unpublished changes and Publish updates (D-054). */

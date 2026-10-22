@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { WebsiteData } from 'site-template';
 import { apiGet, REVIEW_LABELS, type OwnerSession } from '../lib/api';
-import { websiteStatus } from '../lib/website';
+import { approvedWebsiteState, overviewAction, websiteStatus } from '../lib/website';
 import { ReviewStatusCard } from './ReviewStatusCard';
 
 type ProfileSummary = { publicContact: { showMobile: boolean; showWhatsapp: boolean }; canEdit: boolean };
@@ -20,9 +20,7 @@ export function Overview({ session, onStatusChange, onSessionEnded }: { session:
 
   const { reviewStatus, restrictionStatus } = session.agency;
   const noPublicContact = profile ? !profile.publicContact.showMobile && !profile.publicContact.showWhatsapp : false;
-  const action = !profile ? null
-    : !profile.canEdit ? 'View agency details'
-      : reviewStatus === 'CHANGES_REQUESTED' || noPublicContact ? 'Complete your agency details' : 'Review agency details';
+  const action = overviewAction({ profile, website, reviewStatus, restrictionStatus });
 
   return <div className="page">
     <h1>Overview</h1>
@@ -43,7 +41,9 @@ export function Overview({ session, onStatusChange, onSessionEnded }: { session:
       </div>}
     </section>
     {action && <div className="next-action">
-      <Link href="/profile" className="primary-link">{action}</Link>
+      {action.external
+        ? <a href={action.href} className="primary-link" target="_blank" rel="noopener noreferrer">{action.label}</a>
+        : <Link href={action.href} className="primary-link">{action.label}</Link>}
       {noPublicContact && profile?.canEdit && <p className="status-hint">Choose a phone or WhatsApp number to show on your website.</p>}
     </div>}
     {website && profile && <section className="checklist" aria-labelledby="checklist-title">
@@ -58,6 +58,6 @@ export function Overview({ session, onStatusChange, onSessionEnded }: { session:
     </section>}
     {/* D-047: optional secondary shortcut; properties are never required to go live. */}
     <p className="field-hint"><Link href="/properties/new" className="back-link">Add a property</Link> (optional)</p>
-    <ReviewStatusCard agencyId={session.agency.id} onSessionEnded={onSessionEnded} onStatusChange={onStatusChange} />
+    <ReviewStatusCard agencyId={session.agency.id} websiteState={approvedWebsiteState(website)} onSessionEnded={onSessionEnded} onStatusChange={onStatusChange} />
   </div>;
 }

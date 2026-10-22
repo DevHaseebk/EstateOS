@@ -186,7 +186,10 @@ export default function AgencyReviewPage() {
         <section className="panel account-panel" aria-labelledby="account-title">
           <h2 id="account-title">Account status</h2>
           {!restricted ? <>
-            <p><strong>Active.</strong> The owner has normal access.</p>
+            {/* Phase 6b §1 Q6: the owner's account state is separate from the restriction state. */}
+            {detail.owner.accountState === 'INVITED'
+              ? <p><strong>Not restricted.</strong> The owner has not activated the account yet, so nobody can sign in.</p>
+              : <p><strong>Active.</strong> The owner has normal access.</p>}
             <ul className="account-help">
               <li><strong>Deactivate</strong>: the owner can sign in but cannot change anything.</li>
               <li><strong>Block</strong>: the owner is signed out and cannot sign in.</li>
@@ -217,6 +220,6 @@ export default function AgencyReviewPage() {
         </ol>}
       </section>
     </main>
-    <DecisionDialog kind={dialog} agencyName={detail.agencyName} onCancel={() => setDialog(null)} onConfirm={confirm} />
+    <DecisionDialog kind={dialog} agencyName={detail.agencyName} websiteReady={detail.websiteReadiness === 'READY'} onCancel={() => setDialog(null)} onConfirm={confirm} />
   </>;
 }

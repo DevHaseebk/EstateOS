@@ -245,6 +245,8 @@ test('first Live includes only eligible properties; zero properties still go Liv
   assert.equal((await updateProperty(owner.token, sold.id, { ...house({ title: 'Sold synthetic house' }), availability: 'SOLD', expectedVersion: 0 })).status, 200);
   const archivedOne = (await createProperty(owner.token, house({ title: 'Archived synthetic house' }))).body.data.property;
   assert.equal((await archive(owner.token, archivedOne.id, 0)).status, 200);
+  // Phase 6b §1 Q2: a revision only holds properties while the Properties section is shown.
+  assert.equal((await showProperties(owner.token, 0)).status, 200);
   await makeReady(owner.token);
   assert.equal((await approve(owner.agencyId)).status, 200);
   const live = await publicGet(owner.slug);
@@ -267,9 +269,11 @@ test('on a Live site, property changes are unpublished until Publish updates', a
   assert.equal((await site(owner.token)).publication.unpublishedChanges, false);
   const property = (await createProperty(owner.token, house({ title: 'New synthetic listing' }))).body.data.property;
   let data = await site(owner.token);
-  assert.equal(data.publication.unpublishedChanges, true);
+  assert.equal(data.publication.unpublishedChanges, false, 'Phase 6b: a listing is not published content while the Properties section is hidden');
   assert.equal(data.properties.length, 1);
   assert.deepEqual((await publicGet(owner.slug)).body.data.site.properties, []);
+  assert.equal((await showProperties(owner.token, 0)).status, 200);
+  assert.equal((await site(owner.token)).publication.unpublishedChanges, true);
   assert.equal((await authed('post', 'OWNER', owner.token, '/api/v1/owner/website/publish', { expectedLiveRevision: 1, requestId: randomUUID() })).status, 200);
   assert.deepEqual((await publicGet(owner.slug)).body.data.site.properties.map((p: { title: string }) => p.title), ['New synthetic listing']);
   assert.equal((await updateProperty(owner.token, property.id, { ...house({ title: 'New synthetic listing' }), availability: 'SOLD', expectedVersion: 0 })).status, 200);

@@ -35,9 +35,10 @@ export function ownerPropertyView(property: PropertyDoc) {
   };
 }
 
-/** Eligible properties for previews and revisions, newest first, at most 200 (D-084, D-063). */
-export async function eligibleProperties(agencyId: Types.ObjectId | string, session?: mongoose.ClientSession) {
-  const query = Property.find({ agencyId, ...ELIGIBLE_FILTER }).sort({ createdAt: -1, _id: -1 }).limit(MAX_ACTIVE_PROPERTIES).lean();
+/** Eligible properties for previews and revisions, newest first, at most 200 (D-084, D-063) or `limit` when given. */
+export async function eligibleProperties(agencyId: Types.ObjectId | string, session?: mongoose.ClientSession, limit = MAX_ACTIVE_PROPERTIES) {
+  if (limit <= 0) return [];
+  const query = Property.find({ agencyId, ...ELIGIBLE_FILTER }).sort({ createdAt: -1, _id: -1 }).limit(limit).lean();
   if (session) query.session(session);
   return (await query).map(publicPropertyView);
 }

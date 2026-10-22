@@ -192,6 +192,10 @@ async function login(request: AuthRequest, response: Response, portal: Portal): 
   const failedBucket = Math.floor(Date.now() / (15 * 60_000));
   const failed = await AuthRateLimit.findOne({ key: digest(`login-fail-${portal}:${failedKey}:${failedBucket}`) });
   if ((failed?.count ?? 0) >= 5) problem(429, 'RATE_LIMITED', 'Too many requests');
+  // Phase 6b §1 Q3: one account across all IP addresses — at most 30 failures per 15 minutes.
+  const accountKey = normalizeEmail(input.email);
+  const failedAccount = await AuthRateLimit.findOne({ key: digest(`login-fail-account-${portal}:${accountKey}:${failedBucket}`) });
+  if ((failedAccount?.count ?? 0) >= 30) problem(429, 'RATE_LIMITED', 'Too many requests');
   const user = await User.findOne({ emailNormalized: input.email }).select('+passwordHash');
   const expectedRole = portal === 'OWNER' ? 'AGENCY_OWNER' : 'SUPER_ADMIN';
   // Verify against a throwaway hash for unknown emails so response timing does not reveal registered accounts.
@@ -199,6 +203,7 @@ async function login(request: AuthRequest, response: Response, portal: Portal): 
   const good = Boolean(user?.passwordHash) && verified;
   if (!good || !user || user.role !== expectedRole || user.accountState !== 'ACTIVE') {
     await countAttempt(`login-fail-${portal}`, failedKey, 15 * 60_000);
+    await countAttempt(`login-fail-account-${portal}`, accountKey, 15 * 60_000);
     throw new HttpError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
   }
   if (portal === 'OWNER' && !user.agencyId) problem(401, 'INVALID_CREDENTIALS', 'Invalid email or password');

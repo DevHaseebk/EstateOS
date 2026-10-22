@@ -108,10 +108,20 @@ The Phase 6a contract is **APPROVED** (2026-10-22) and **implemented and verifie
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 137/137; the HTTPS end-to-end check (create → claim → sign in → approve) passed.
 - An invited account can neither sign in nor use a support reset code (the reset CLI and redeem route now require an ACTIVE account).
 
-## Next gate (written before Phase 1; kept for history)
+## Phase 6b status (2026-10-22)
+
+A Codex review of Phases 0–6a was checked against the code. The resulting Phase 6b pilot-fixes contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-6B-PILOT-FIXES-CONTRACT-APPROVED.md`.
+
+- Fixed: public images `public, max-age=300` (was one year immutable); revisions hold only the shown properties (newest `displayCount`, none while hidden) and only their photos are public; 30 failed sign-ins per account per 15 minutes across IPs; the upload error names all five purposes; truthful Overview action, review cards, editor intro, Approve/Restore dialogs and invited-owner status; editor sections grouped into Essentials and Optional sections.
+- Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 142/142; the HTTPS check on the 3d synthetic agency passed (cache header; a hidden Properties section makes its photo 404 after Publish).
+- **Not done:** the browser click-through gate. The in-app browser cannot open the `*.estateos.localhost` HTTPS hosts, and the BFF Origin check correctly refuses sign-in on `localhost:4002`. The owner (or Claude in Chrome, if the owner asks) must do the visual check.
+
+## History
+
+### Pre-Phase-1 "Next gate" (superseded: Phases 1–6b are done)
 
 Review actual repo/active Git diff; reconcile AI setup; document Phase 1 exact server session/CSRF/dev host, agency/user/session bootstrap/recovery, tenant-scoping and versioned auth API contracts with tests. Obtain explicit owner approval **before auth/tenant business code**. Suggested prompt: `docs/AI/PHASE-1-AUTH-TENANT-CODEX-PROMPT.md`.
 
-## Historical handover
+### Historical handover
 
 Full previous v5.8 state preserved verbatim: `docs/AI/HISTORY-v5.8-docs-AI-CURRENT-STATE.md`.

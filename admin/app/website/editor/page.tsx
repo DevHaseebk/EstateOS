@@ -10,18 +10,20 @@ import { useWebsite } from '../../lib/website';
 import { BasicSectionForm, CardsForm, LayoutPanel, PropertiesSectionForm, TeamForm } from './forms';
 
 type EditorKey = 'layout' | 'header' | 'hero' | 'contact' | 'about' | 'services' | 'whyChooseUs' | 'team' | 'properties' | 'footer';
-const SECTIONS: { key: EditorKey; label: string; hint: string; optional?: OptionalSection }[] = [
-  { key: 'layout', label: 'Layout', hint: 'Show, hide and order extra sections' },
-  { key: 'header', label: 'Header', hint: 'Agency name and contact button' },
-  { key: 'hero', label: 'Hero', hint: 'Main heading, photo and button' },
-  { key: 'about', label: 'About', hint: 'Your agency story', optional: 'about' },
-  { key: 'services', label: 'Services', hint: 'What you offer', optional: 'services' },
-  { key: 'whyChooseUs', label: 'Why Choose Us', hint: 'Reasons to choose you', optional: 'whyChooseUs' },
-  { key: 'team', label: 'Team', hint: 'Your agents', optional: 'team' },
-  { key: 'properties', label: 'Properties', hint: 'Your listings on the website', optional: 'properties' },
-  { key: 'contact', label: 'Contact', hint: 'Contact heading and message' },
-  { key: 'footer', label: 'Footer', hint: 'Built from your Agency profile' },
+// Phase 6b §1 Q7: two labelled groups, so owners see what every site needs apart from what is optional.
+const SECTIONS: { key: EditorKey; label: string; hint: string; group: 'essentials' | 'optional'; optional?: OptionalSection }[] = [
+  { key: 'header', label: 'Header', hint: 'Agency name and contact button', group: 'essentials' },
+  { key: 'hero', label: 'Hero', hint: 'Main heading, photo and button', group: 'essentials' },
+  { key: 'contact', label: 'Contact', hint: 'Contact heading and message', group: 'essentials' },
+  { key: 'footer', label: 'Footer', hint: 'Built from your Agency profile', group: 'essentials' },
+  { key: 'layout', label: 'Layout', hint: 'Show, hide and order these sections', group: 'optional' },
+  { key: 'about', label: 'About', hint: 'Your agency story', group: 'optional', optional: 'about' },
+  { key: 'services', label: 'Services', hint: 'What you offer', group: 'optional', optional: 'services' },
+  { key: 'whyChooseUs', label: 'Why Choose Us', hint: 'Reasons to choose you', group: 'optional', optional: 'whyChooseUs' },
+  { key: 'team', label: 'Team', hint: 'Your agents', group: 'optional', optional: 'team' },
+  { key: 'properties', label: 'Properties', hint: 'Your listings on the website', group: 'optional', optional: 'properties' },
 ];
+const GROUPS = [{ key: 'essentials', title: 'Essentials' }, { key: 'optional', title: 'Optional sections' }] as const;
 
 function Footer({ mapped }: { mapped: WebsiteData['mapped'] }) {
   return <section className="form-section">
@@ -50,12 +52,17 @@ function Editor() {
   const current: EditorKey = SECTIONS.some((section) => section.key === requested) ? requested as EditorKey : 'hero';
   const open = (key: EditorKey) => guarded(() => router.replace(`/website/editor?section=${key}`));
   if (!website) return error ? <p className="form-error" role="alert">{error}</p> : <p role="status">Loading your website…</p>;
-  return <>{website.publication?.status === 'LIVE' && <p className="live-note">Saved changes stay private until you publish them from <Link href="/website">My Website</Link>.</p>}<div className="editor-layout">
+  return <>{website.publication?.status === 'LIVE'
+    ? <p className="live-note">Saved changes stay private until you publish them from <Link href="/website">My Website</Link>.</p>
+    : <p className="page-intro">Saved changes stay private until your website goes live.</p>}<div className="editor-layout">
     <nav className="section-list" aria-label="Website sections">
-      {SECTIONS.map((section) => <button key={section.key} type="button" aria-current={current === section.key ? 'true' : undefined} onClick={() => open(section.key)}>
-        <strong>{section.label}{section.optional && <span className={`shown-badge${website.layout.visible[section.optional] ? ' on' : ''}`}>{website.layout.visible[section.optional] ? 'Shown' : 'Hidden'}</span>}</strong>
-        <span>{section.hint}</span>
-      </button>)}
+      {GROUPS.map((group) => <div key={group.key} className="section-group" role="group" aria-labelledby={`group-${group.key}`}>
+        <p className="section-group-title" id={`group-${group.key}`}>{group.title}</p>
+        {SECTIONS.filter((section) => section.group === group.key).map((section) => <button key={section.key} type="button" aria-current={current === section.key ? 'true' : undefined} onClick={() => open(section.key)}>
+          <strong>{section.label}{section.optional && <span className={`shown-badge${website.layout.visible[section.optional] ? ' on' : ''}`}>{website.layout.visible[section.optional] ? 'Shown' : 'Hidden'}</span>}</strong>
+          <span>{section.hint}</span>
+        </button>)}
+      </div>)}
       <button type="button" className="secondary" onClick={() => guarded(() => router.push('/website/preview'))}>Preview website</button>
     </nav>
     <div className="editor-main">
@@ -73,7 +80,7 @@ function Editor() {
 export default function EditorPage() {
   return <OwnerPage>{() => <div className="page page-wide">
     <h1>Edit website</h1>
-    <p className="page-intro">Choose a section, make changes and save it. Saved changes stay private until your website goes live.</p>
+    <p className="page-intro">Choose a section, make changes and save it.</p>
     <Suspense fallback={<p role="status">Loading…</p>}><Editor /></Suspense>
   </div>}</OwnerPage>;
 }

@@ -78,7 +78,10 @@ export function snapshotMediaIds(site: Awaited<ReturnType<typeof buildSnapshot>>
 
 export async function buildSnapshot(agency: SnapshotAgency, draft: DraftFields, session?: mongoose.ClientSession) {
   const view = websiteView(agency, draft, false);
-  return { theme: view.theme, sections: view.sections, layout: view.layout, mapped: view.mapped, properties: await eligibleProperties(agency._id, session) };
+  // Phase 6b §1 Q2: a revision holds only the properties the page shows (newest displayCount, none while hidden),
+  // so no other listing or photo becomes public.
+  const shown = view.layout.visible.properties ? (view.sections.properties as { displayCount: number }).displayCount : 0;
+  return { theme: view.theme, sections: view.sections, layout: view.layout, mapped: view.mapped, properties: await eligibleProperties(agency._id, session, shown) };
 }
 
 /** Recursively drops internal `version` counters and sorts keys, so identical content always gives the same text. */

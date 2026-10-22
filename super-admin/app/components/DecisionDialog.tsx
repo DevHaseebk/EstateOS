@@ -11,7 +11,8 @@ const COPY: Record<DecisionKind, { title: string; confirm: string; body: string;
   APPROVE: {
     title: 'Approve this agency?',
     confirm: 'Approve agency',
-    body: 'Approval does not publish the website. The site only goes live automatically once the website is also ready.',
+    // Phase 6b §3: the real effect depends on readiness, see approveBody().
+    body: 'The website goes live automatically once the owner finishes the website essentials.',
   },
   REQUEST_CHANGES: {
     title: 'Request changes?',
@@ -50,15 +51,16 @@ const COPY: Record<DecisionKind, { title: string; confirm: string; body: string;
   RESTORE: {
     title: 'Restore this agency?',
     confirm: 'Restore agency',
-    body: 'The owner gets normal access again. Restoring does not make the website public by itself.',
+    body: 'The owner gets normal access again. If the agency is approved and its website is ready, the website becomes public again.',
     reasonLabel: HISTORY_ONLY,
   },
 };
 
 // D-066: one focused confirmation per action (dialog on desktop, bottom sheet on mobile); reason required where D-022 says so.
-export function DecisionDialog({ kind, agencyName, onCancel, onConfirm }: {
+export function DecisionDialog({ kind, agencyName, websiteReady = false, onCancel, onConfirm }: {
   kind: DecisionKind | null;
   agencyName: string;
+  websiteReady?: boolean;
   onCancel: () => void;
   onConfirm: (reason?: string) => Promise<void>;
 }) {
@@ -91,7 +93,7 @@ export function DecisionDialog({ kind, agencyName, onCancel, onConfirm }: {
     {copy && <form onSubmit={submit}>
       <h2 id="decision-title">{copy.title}</h2>
       <p className="dialog-agency">{agencyName}</p>
-      <p>{copy.body}</p>
+      <p>{kind === 'APPROVE' && websiteReady ? 'The website is ready, so it goes live as soon as you approve.' : copy.body}</p>
       {needsReason && <>
         <label htmlFor={reasonId}>{copy.reasonLabel}</label>
         <textarea id={reasonId} value={reason} onChange={(event) => setReason(event.target.value)} rows={5} maxLength={1000} required aria-describedby={`${reasonId}-count`} />

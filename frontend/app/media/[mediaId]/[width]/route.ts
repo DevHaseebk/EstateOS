@@ -9,6 +9,6 @@ export async function GET(_request: Request, context: { params: Promise<{ mediaI
     .catch(() => null);
   if (!upstream?.ok || !upstream.headers.get('content-type')?.startsWith('image/')) return new Response('Not found', { status: 404 });
   return new Response(await upstream.arrayBuffer(), { status: 200, headers: {
-    'Content-Type': upstream.headers.get('content-type')!, 'Cache-Control': upstream.headers.get('cache-control') ?? 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff',
+    'Content-Type': upstream.headers.get('content-type')!, 'Cache-Control': upstream.headers.get('cache-control') ?? 'public, max-age=300', 'X-Content-Type-Options': 'nosniff',
   } });
 }

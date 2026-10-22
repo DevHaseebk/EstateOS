@@ -1,3 +1,40 @@
+# EstateOS — Phase 6b pilot fixes: implemented and verified by Claude (2026-10-22)
+
+## Current task
+- Contract: `docs/PHASE-6B-PILOT-FIXES-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 5 confirmations. Source: a Codex review of Phases 0–6a, checked by Claude against the code.
+- Git: branch `master`, HEAD `3029982` (pushed). **All Phase 6b work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-047, D-053, D-078, D-083, D-090, D-098, D-102, D-105, D-110, D-115, D-118.
+
+## Work completed
+- **Backend**
+  - `media-routes.ts`: `PUBLIC_IMAGE_CACHE = 'public, max-age=300'` for public images (owner and Super Admin stay `private, max-age=3600`); the upload error names all five purposes. The frontend image proxy falls back to the same 5 minutes.
+  - `properties.ts` / `publication.ts`: `eligibleProperties(agencyId, session, limit)`; `buildSnapshot` stores the newest `displayCount` eligible properties while the Properties section is shown, none while hidden, so `snapshotMediaIds` only publishes those photos. Existing revisions are unchanged; a property added while the section is hidden is not an "unpublished change".
+  - `auth.ts`: a third sign-in limiter, `login-fail-account-<portal>`, 30 failures per account per 15 minutes across IPs → generic 429.
+- **Agency Admin**
+  - `lib/website.ts`: `overviewAction` (the ordered rules of §1 Q4), `approvedWebsiteState`, `approvedText`.
+  - Overview: one real next action ("Open your website" opens the live site in a new tab).
+  - Review card: Approved text from the real website state; Changes requested says "Update your agency details or website, then resubmit for review."
+  - Editor: the intro no longer claims "private until live" on a Live site; sections grouped into **Essentials** (Header, Hero, Contact, Footer) and **Optional sections** (Layout plus the five optional sections).
+- **Super Admin**: the Approve dialog depends on readiness ("goes live as soon as you approve" when ready); the Restore dialog explains that an approved, ready site becomes public again; the Account panel says "The owner has not activated the account yet" for an invited owner.
+- **Docs**: `CURRENT-STATE.md` now has a "History" section holding the pre-Phase-1 next gate and the historical handover link.
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (5 workspaces) → exit 0.
+- `npm test -w backend` → **142/142**:
+  - new `test/pilot-fixes.test.ts`, 5 tests: cache headers, 8 properties → newest 6 and only their photos public, hidden → none and 404, the 30-failure account limit from 30 IPs, the upload message, and the Overview action, approved text and dialog copy;
+  - updated 3d/5a assertions: the cache header; properties tests now show the Properties section before expecting listings.
+- HTTPS check on the 3d synthetic agency:
+  - public hero `Cache-Control: public, max-age=300`;
+  - property cover public while shown; hide Properties + Publish → the property photo is 404 and the listing is gone; show again + Publish → 200.
+- **Not verified:** the browser click-through gate (§4). The in-app browser cannot open `*.estateos.localhost`, and sign-in on `localhost:4002` is correctly refused by the BFF Origin check.
+
+## Handoff
+- The owner should look at: Super Admin directory, Create agency, agency page (invited owner, dialogs); owner Overview and the grouped editor.
+- Next: the deploy/staging phase (R2 driver plus CDN with purge, which may bring back longer image caching) or D-117 privacy; both need owner input.
+- Preserve: revisions only hold what the page shows; public images are never cached long without a purge path.
+
+---
+
 # EstateOS — Phase 6a admin-created agency and owner invitation: implemented and verified by Claude (2026-10-22)
 
 ## Current task
