@@ -1,3 +1,22 @@
+# EstateOS — Phase 6b browser gate completed by Codex (2026-10-22)
+
+## Scope and Git
+- Owner asked to finish the pending Phase 6b browser check from `docs/PHASE-6B-PILOT-FIXES-CONTRACT-APPROVED.md` §4. Decisions: D-047, D-093, D-102, D-110, D-115, D-118.
+- Branch `master`, based on commit `4f9665f`. This handover and `docs/AI/CURRENT-STATE.md` are the only changes. No application code or dev database records were changed.
+
+## Browser verification
+- Local ports 4000–4003 and Caddy 80/443 were listening; `/api/health` returned `database: connected`.
+- In Chrome on trusted local HTTPS, a signed-in Super Admin opened the review queue, All agencies directory, Create agency form, an approved agency detail and a Pending agency detail. The Pending agency's Approve confirmation stated that its website will go Live automatically once essentials are finished; Cancel closed it without mutation. Desktop and 390×844 mobile directory/form/dialog layouts were inspected.
+- A signed-in synthetic owner with a Live site opened Overview, the mobile Menu, My Website and the editor. Overview showed separate Approved/Live states and the real `Open your website` action. The editor grouped Essentials and Optional sections and explained that saved Live changes stay private until Publish. Desktop and 390×844 mobile layouts were inspected.
+- No blocking visual or copy defect was found in these screens. Temporary QA tabs were closed afterward. The in-app browser rejected the local CA; Chrome was the working real-browser path.
+- Limits: no new agency was submitted; Block/Restore and Publish were not performed; the existing admin-created dev agency's invitation was already claimed, so its INVITED state was not seen in the browser. Existing invitation and pilot-fixes tests cover the corresponding API/wording behavior.
+- In this task thread, `npm run typecheck` and `npm run lint` passed across five workspaces and `npm test -w backend` passed 142/142. Build was not rerun after this docs-only update; the prior Phase 6b build pass remains recorded below.
+
+## Handoff
+- Phase 6b's pending browser gate is closed for the approved screen scope. Next: a separately approved staging/deployment contract and D-117 privacy work before a real-user pilot. Preserve the existing first-Live and Publish Updates rules, tenant boundaries and short public-image cache until a purge path exists.
+
+---
+
 # EstateOS — Phase 6b pilot fixes: implemented and verified by Claude (2026-10-22)
 
 ## Current task
