@@ -6,19 +6,22 @@ import { ApiError, apiMutation } from '../lib/api';
 import { AVAILABILITY_LABELS, availabilityOptions, type OwnerProperty } from '../lib/properties';
 import { TextField } from '../website/editor/forms';
 import { useDraftForm } from '../website/editor/useDraftForm';
+import { PhotoGallery } from './PhotoGallery';
 
 type Values = {
   title: string; intent: PropertyIntent; type: PropertyType; pricePkr: string; city: string; area: string;
   sizeValue: string; sizeUnit: SizeUnit; bedrooms: string; bathrooms: string; description: string; availability: OwnerProperty['availability'];
+  photos: string[]; coverMediaId: string;
 };
 const EMPTY: Values = {
-  title: '', intent: 'SALE', type: 'HOUSE', pricePkr: '', city: '', area: '', sizeValue: '', sizeUnit: 'MARLA', bedrooms: '', bathrooms: '', description: '', availability: 'AVAILABLE',
+  title: '', intent: 'SALE', type: 'HOUSE', pricePkr: '', city: '', area: '', sizeValue: '', sizeUnit: 'MARLA', bedrooms: '', bathrooms: '', description: '', availability: 'AVAILABLE', photos: [], coverMediaId: '',
 };
 const toValues = (property: OwnerProperty | null): Values => property ? {
   title: property.title, intent: property.intent, type: property.type, pricePkr: String(property.pricePkr), city: property.city, area: property.area,
   sizeValue: property.size ? String(property.size.value) : '', sizeUnit: property.size?.unit ?? 'MARLA',
   bedrooms: property.bedrooms !== undefined ? String(property.bedrooms) : '', bathrooms: property.bathrooms !== undefined ? String(property.bathrooms) : '',
   description: property.description ?? '', availability: property.availability,
+  photos: property.photos ?? [], coverMediaId: property.coverMediaId ?? '',
 } : EMPTY;
 const numberOrNull = (value: string) => value.trim() === '' ? null : Number(value.replace(/,/g, ''));
 
@@ -27,6 +30,7 @@ function body(values: Values) {
     title: values.title, intent: values.intent, type: values.type, pricePkr: numberOrNull(values.pricePkr), city: values.city, area: values.area,
     size: values.sizeValue.trim() ? { value: numberOrNull(values.sizeValue), unit: values.sizeUnit } : null,
     bedrooms: numberOrNull(values.bedrooms), bathrooms: numberOrNull(values.bathrooms), description: values.description,
+    photos: values.photos, coverMediaId: values.photos.includes(values.coverMediaId) ? values.coverMediaId : null,
   };
 }
 
@@ -53,7 +57,8 @@ function ConfirmAction({ open, archived, busy, onConfirm, onCancel }: { open: bo
 export function PropertyForm({ property, canEdit, onSaved }: { property: OwnerProperty | null; canEdit: boolean; onSaved: (property: OwnerProperty) => void }) {
   const [current, setCurrent] = useState(property);
   const [detailsOpen, setDetailsOpen] = useState(Boolean(property && (property.size || property.bedrooms !== undefined || property.bathrooms !== undefined || property.description)));
-  const [photosOpen, setPhotosOpen] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(Boolean(property?.photos?.length));
+  const [uploading, setUploading] = useState(0);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -159,13 +164,18 @@ export function PropertyForm({ property, canEdit, onSaved }: { property: OwnerPr
       <section className="form-section">
         <h2 className="section-toggle-title"><button type="button" className="section-toggle" aria-expanded={photosOpen} aria-controls="property-photos" onClick={() => setPhotosOpen(!photosOpen)}>
           Photos <span className="field-hint">(optional)</span></button></h2>
-        <div id="property-photos" hidden={!photosOpen}><p className="field-hint">Photo upload comes in a later phase. Your website shows a simple placeholder until then.</p></div>
+        <div id="property-photos" hidden={!photosOpen}>
+          <PhotoGallery photos={values.photos} cover={values.coverMediaId} disabled={disabled} onUploadingChange={setUploading}
+            onChange={(next) => setValues({ ...values, photos: next.photos, coverMediaId: next.cover })} />
+          {(errors.photos || errors.coverMediaId) && <p className="field-error">{errors.photos ?? errors.coverMediaId}</p>}
+        </div>
       </section>
     </fieldset>
 
     {canEdit && <div className="form-actions">
-      {!current?.archived && <button type="submit" className="primary-inline" disabled={!dirty || saving}>{saving ? 'Saving…' : current ? 'Save property' : 'Add property'}</button>}
-      {dirty && !saving && <span className="field-hint">You have unsaved changes.</span>}
+      {!current?.archived && <button type="submit" className="primary-inline" disabled={!dirty || saving || uploading > 0}>{saving ? 'Saving…' : current ? 'Save property' : 'Add property'}</button>}
+      {uploading > 0 && <span className="field-hint">Wait for the photo upload to finish before saving.</span>}
+      {dirty && !saving && uploading === 0 && <span className="field-hint">You have unsaved changes.</span>}
       {current && <button type="button" className="secondary" disabled={dirty || busy} title={dirty ? 'Save or discard your changes first' : undefined} onClick={() => { setActionError(''); setConfirming(true); }}>
         {current.archived ? 'Restore' : 'Archive'}</button>}
     </div>}

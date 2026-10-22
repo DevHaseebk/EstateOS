@@ -9,7 +9,8 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   const { path } = await context.params;
   const route = `/api/v1/${path.join('/')}`;
   const allowed = (request.method === 'GET' && (['/api/v1/auth/csrf', '/api/v1/super-admin/session', '/api/v1/super-admin/review-queue', '/api/v1/super-admin/agencies'].includes(route) ||
-      /^\/api\/v1\/super-admin\/agencies\/[a-f0-9]{24}(\/website|\/properties)?$/i.test(route))) ||
+      /^\/api\/v1\/super-admin\/agencies\/[a-f0-9]{24}(\/website|\/properties)?$/i.test(route) ||
+      /^\/api\/v1\/super-admin\/media\/[a-f0-9]{32}\/\d{2,4}$/.test(route))) ||
     (request.method === 'POST' && (['/api/v1/super-admin/sessions', '/api/v1/auth/recovery/complete'].includes(route) ||
       /^\/api\/v1\/super-admin\/agencies\/[a-f0-9]{24}\/(review-decisions|reopen|restrictions)$/i.test(route))) ||
     (request.method === 'DELETE' && route === '/api/v1/super-admin/session');
@@ -47,6 +48,12 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
     });
   } catch {
     return NextResponse.json({ error: { code: 'AUTH_UNAVAILABLE', message: 'Authentication is unavailable' } }, { status: 503 });
+  }
+  // Phase 3d: images pass through as bytes with the backend's cache header (never JSON, never cookies).
+  if (upstream.ok && upstream.headers.get('content-type')?.startsWith('image/')) {
+    return new NextResponse(await upstream.arrayBuffer(), { status: 200, headers: {
+      'Content-Type': upstream.headers.get('content-type')!, 'Cache-Control': upstream.headers.get('cache-control') ?? 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff',
+    } });
   }
   const body = upstream.status === 204 ? null : await upstream.json().catch(() => null);
   const response = upstream.status === 204 ? new NextResponse(null, { status: 204 }) : NextResponse.json(body?.internal ? { data: body.data } : body, { status: upstream.status });

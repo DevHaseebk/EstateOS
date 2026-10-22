@@ -5,6 +5,7 @@ export type OwnerProperty = {
   id: string; key: string; title: string; intent: PropertyIntent; type: PropertyType; pricePkr: number; city: string; area: string;
   size?: { value: number; unit: SizeUnit }; bedrooms?: number; bathrooms?: number; description?: string;
   availability: 'AVAILABLE' | 'SOLD' | 'RENTED'; archived: boolean; version: number; createdAt: string; updatedAt: string;
+  photos?: string[]; coverMediaId?: string;
 };
 
 export const AVAILABILITY_LABELS: Record<OwnerProperty['availability'], string> = { AVAILABLE: 'Available', SOLD: 'Sold', RENTED: 'Rented' };

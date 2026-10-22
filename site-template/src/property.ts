@@ -7,6 +7,8 @@ export type SizeUnit = 'SQ_FT' | 'SQ_YD' | 'MARLA' | 'KANAL';
 export type PublicProperty = {
   key: string; title: string; intent: PropertyIntent; type: PropertyType; pricePkr: number; city: string; area: string;
   size?: { value: number; unit: SizeUnit }; bedrooms?: number; bathrooms?: number; description?: string;
+  /** Phase 3d: gallery media ids in display order and the cover (first photo when none chosen). */
+  photos?: string[]; coverMediaId?: string;
 };
 
 export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {

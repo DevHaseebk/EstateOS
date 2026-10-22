@@ -44,7 +44,7 @@ function validateOrigin(request: AuthRequest): void {
 function clientIp(request: Request): string {
   return request.header('x-client-ip') ?? 'unknown';
 }
-async function countAttempt(kind: string, value: string, durationMs: number): Promise<number> {
+export async function countAttempt(kind: string, value: string, durationMs: number): Promise<number> {
   const now = Date.now();
   const bucket = Math.floor(now / durationMs);
   const key = digest(`${kind}:${value}:${bucket}`);
@@ -106,9 +106,10 @@ function preAuthValid(request: AuthRequest): boolean {
   const expected = preAuthCsrf(portalFor(request), nonceValue);
   return secureEqual(request.header('x-csrf-token') ?? '', expected);
 }
-export async function requireCsrf(request: AuthRequest, authenticated: boolean): Promise<void> {
+/** Mutations need CSRF + exact Origin. Bodies are JSON unless a route explicitly allows other types (Phase 3d image uploads). */
+export async function requireCsrf(request: AuthRequest, authenticated: boolean, allowedTypes: string[] = ['application/json']): Promise<void> {
   validateOrigin(request);
-  if (!request.is('application/json') && request.method !== 'DELETE') problem(415, 'UNSUPPORTED_MEDIA_TYPE', 'JSON required');
+  if (!request.is(allowedTypes) && request.method !== 'DELETE') problem(415, 'UNSUPPORTED_MEDIA_TYPE', allowedTypes.length === 1 ? 'JSON required' : 'Unsupported content type');
   if (authenticated) {
     const context = await currentSession(request);
     if (!context || !secureEqual(request.header('x-csrf-token') ?? '', sessionCsrf(context.session.csrfSecret, context.tokenDigest))) {
@@ -293,6 +294,9 @@ export function authErrorHandler(error: unknown, _request: Request, response: Re
     details = Object.fromEntries(error.issues.map((issue) => [issue.path.join('.') || 'request', issue.message]));
   } else if (error instanceof Error && error.message === 'AUTH_UNAVAILABLE') {
     status = 503; code = 'AUTH_UNAVAILABLE'; message = 'Authentication is temporarily unavailable';
+  } else if (error instanceof Error && (error as { type?: string }).type === 'entity.too.large') {
+    // Phase 3d: an upload body over the size limit (D-060: 5 MB per image).
+    status = 422; code = 'TOO_LARGE'; message = 'This image is larger than 5 MB.';
   } else if (error instanceof SyntaxError && 'body' in error) {
     status = 400; code = 'INVALID_JSON'; message = 'Malformed JSON';
   }

@@ -37,6 +37,6 @@ export default function AgencyPreviewPage() {
         <Link href={`/agencies/${agencyId}`} className="back-link">Back to agency</Link>
       </span>
     </div>
-    <div className={`preview-canvas preview-${width}`}><SiteTemplate model={siteModelFromWebsite(website)} /></div>
+    <div className={`preview-canvas preview-${width}`}><SiteTemplate model={siteModelFromWebsite(website, undefined, { mediaUrl: (id, width) => `/api/v1/super-admin/media/${id}/${width}` })} /></div>
   </main>;
 }

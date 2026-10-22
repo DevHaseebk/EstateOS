@@ -11,7 +11,7 @@
     "bootstrap:super-admin": "tsx src/cli/bootstrap-super-admin.ts",
     "recovery:issue": "tsx src/cli/issue-reset.ts",
     "migrate:review-axes": "tsx src/cli/migrate-review-axes.ts",
-    "test": "tsx --test test/auth.test.ts test/review.test.ts test/restriction.test.ts test/profile.test.ts test/website.test.ts test/website-sections.test.ts test/publication.test.ts test/publish.test.ts test/properties.test.ts test/frontend-public.test.ts test/bff.test.ts",
+    "test": "tsx --test test/auth.test.ts test/review.test.ts test/restriction.test.ts test/profile.test.ts test/website.test.ts test/website-sections.test.ts test/publication.test.ts test/publish.test.ts test/properties.test.ts test/media.test.ts test/frontend-public.test.ts test/bff.test.ts",
     "reconcile:activations": "tsx src/cli/reconcile-activations.ts"
   },
   "dependencies": {
@@ -21,6 +21,7 @@
     "dotenv": "^18.0.8",
     "express": "^5.3.0",
     "mongoose": "^9.11.2",
+    "sharp": "^0.35.5",
     "site-template": "*",
     "zod": "^4.6.7"
   },

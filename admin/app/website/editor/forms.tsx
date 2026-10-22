@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useCallback, type FormEvent, type ReactNode } from 'react';
 import { HERO_IMAGE_SRC, ICON_LABELS, OPTIONAL_SECTION_LABELS, SITE_ICONS, SiteIconGlyph, type LayoutData, type OptionalSection, type SiteIcon, type WebsiteData } from 'site-template';
 import { apiMutation } from '../../lib/api';
+import { ownerMediaUrl } from '../../lib/website';
+import { ImageUpload } from '../../components/ImageUpload';
 import { useDraftForm } from './useDraftForm';
 
 type Sections = WebsiteData['sections'];
@@ -82,14 +84,16 @@ type Basic = 'header' | 'hero' | 'contact' | 'about';
 type Values = Record<string, string>;
 function valuesFor(website: WebsiteData, key: Basic): Values {
   const { header, hero, contact, about } = website.sections;
-  if (key === 'header') return { contactButtonLabel: header.contactButtonLabel, preferredContact: header.preferredContact ?? '' };
-  if (key === 'hero') return { heading: hero.heading, subtitle: hero.subtitle ?? '', ctaLabel: hero.ctaLabel, heroImageId: hero.heroImageId ?? '' };
+  if (key === 'header') return { contactButtonLabel: header.contactButtonLabel, preferredContact: header.preferredContact ?? '', logoMediaId: header.logoMediaId ?? '' };
+  if (key === 'hero') return { heading: hero.heading, subtitle: hero.subtitle ?? '', ctaLabel: hero.ctaLabel, heroImageId: hero.heroImageId ?? '', heroUploadId: hero.heroUploadId ?? '' };
   if (key === 'contact') return { heading: contact.heading, message: contact.message ?? '' };
   return { heading: about.heading, story: about.story ?? '' };
 }
 function bodyFor(key: Basic, values: Values) {
-  if (key === 'header') return { contactButtonLabel: values.contactButtonLabel, preferredContact: values.preferredContact || null };
-  if (key === 'hero') return { heading: values.heading, subtitle: values.subtitle, ctaLabel: values.ctaLabel, heroImageId: values.heroImageId || null };
+  if (key === 'header') return { contactButtonLabel: values.contactButtonLabel, preferredContact: values.preferredContact || null, logoMediaId: values.logoMediaId || null };
+  if (key === 'hero') {
+    return { heading: values.heading, subtitle: values.subtitle, ctaLabel: values.ctaLabel, heroImageId: values.heroUploadId ? null : values.heroImageId || null, heroUploadId: values.heroUploadId || null };
+  }
   if (key === 'contact') return { heading: values.heading, message: values.message };
   return { heading: values.heading, story: values.story };
 }
@@ -103,7 +107,17 @@ export function BasicSectionForm({ website, sectionKey, onSaved }: { website: We
   const titles: Record<Basic, string> = { header: 'Header', hero: 'Hero', contact: 'Contact', about: 'About' };
   return <FormShell title={titles[sectionKey]} readOnly={!website.canEdit} dirty={dirty} saving={saving} message={message} onSubmit={save}>
     {sectionKey === 'header' && <>
-      <p className="field-hint">Your agency name ({mapped.agencyName}) is shown as the site name. A logo upload comes in a later phase.</p>
+      <fieldset className="choice-group">
+        <legend>Logo (optional)</legend>
+        {values.logoMediaId
+          ? <div className="logo-preview">
+            <Image src={ownerMediaUrl(values.logoMediaId, 480)} alt="Your logo" width={200} height={80} unoptimized />
+            <button type="button" className="danger-text small" disabled={disabled} onClick={() => set('logoMediaId')('')}>Remove logo</button>
+          </div>
+          : <p className="field-hint">Without a logo, your agency name ({mapped.agencyName}) is shown as text.</p>}
+        <ImageUpload purpose="LOGO" label={values.logoMediaId ? 'Replace logo' : 'Upload logo'} rule="JPEG, PNG or WebP, up to 5 MB, at least 64 × 64 pixels." disabled={disabled} onUploaded={set('logoMediaId')} />
+        {errors.logoMediaId && <p className="field-error">{errors.logoMediaId}</p>}
+      </fieldset>
       <TextField id="contactButtonLabel" label="Contact button text" value={values.contactButtonLabel} onChange={set('contactButtonLabel')} max={30} error={errors.contactButtonLabel} disabled={disabled} />
       <div className="field">
         <label htmlFor="preferredContact">Contact button opens</label>
@@ -122,15 +136,28 @@ export function BasicSectionForm({ website, sectionKey, onSaved }: { website: We
       <TextField id="ctaLabel" label="Button text" value={values.ctaLabel} onChange={set('ctaLabel')} max={30} error={errors.ctaLabel} disabled={disabled} hint="The button scrolls to your contact details" />
       <fieldset className="choice-group">
         <legend>Main photo</legend>
-        {website.heroDefaults.length === 0
-          ? <p className="field-hint">No platform photos are available yet. EstateOS will add licensed photos soon; photo upload comes in a later phase.</p>
-          : <div className="photo-grid">
-            {website.heroDefaults.map((photo) => <label key={photo.id} className={`photo-option${values.heroImageId === photo.id ? ' selected' : ''}`}>
-              <input type="radio" name="heroImageId" value={photo.id} checked={values.heroImageId === photo.id} disabled={disabled} onChange={() => set('heroImageId')(photo.id)} />
+        {/* Phase 3d: the agency's own photo satisfies readiness (D-033/D-108); a licensed platform photo still works too. */}
+        {values.heroUploadId && <div className="photo-grid">
+          <label className="photo-option selected">
+            <input type="radio" name="heroImage" checked readOnly />
+            <Image src={ownerMediaUrl(values.heroUploadId, 960)} alt="" width={320} height={200} unoptimized />
+            <span>Your photo</span>
+          </label>
+        </div>}
+        <ImageUpload purpose="HERO" label={values.heroUploadId ? 'Replace your photo' : 'Upload your own photo'}
+          rule="JPEG, PNG or WebP, up to 5 MB, at least 1200 pixels wide and landscape. Location data is removed automatically." disabled={disabled}
+          onUploaded={(id) => setValues({ ...values, heroUploadId: id, heroImageId: '' })} />
+        {errors.heroUploadId && <p className="field-error">{errors.heroUploadId}</p>}
+        {website.heroDefaults.length > 0 && <>
+          <p className="field-hint">Or choose a platform photo:</p>
+          <div className="photo-grid">
+            {website.heroDefaults.map((photo) => <label key={photo.id} className={`photo-option${!values.heroUploadId && values.heroImageId === photo.id ? ' selected' : ''}`}>
+              <input type="radio" name="heroImage" value={photo.id} checked={!values.heroUploadId && values.heroImageId === photo.id} disabled={disabled} onChange={() => setValues({ ...values, heroImageId: photo.id, heroUploadId: '' })} />
               {HERO_IMAGE_SRC[photo.id] ? <Image src={HERO_IMAGE_SRC[photo.id]} alt="" width={320} height={200} /> : <span className="photo-missing" />}
               <span>{photo.label}</span>
             </label>)}
-          </div>}
+          </div>
+        </>}
         {errors.heroImageId && <p className="field-error">{errors.heroImageId}</p>}
       </fieldset>
     </>}

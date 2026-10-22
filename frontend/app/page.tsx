@@ -24,7 +24,7 @@ export default async function Home() {
   if (slug) {
     const published = await fetchPublishedSite(slug);
     if (!published) notFound();
-    return <SiteTemplate model={siteModelFromWebsite(published.site)} />;
+    return <SiteTemplate model={siteModelFromWebsite(published.site, undefined, { mediaUrl: (id, width) => `/media/${id}/${width}` })} />;
   }
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-16 text-slate-900">

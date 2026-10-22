@@ -53,8 +53,8 @@ const optional = <T extends object>(entries: T) => Object.fromEntries(Object.ent
 export type DraftFields = {
   theme?: { preset?: string | null; version?: number | null } | null;
   sections?: {
-    header?: { contactButtonLabel?: string | null; preferredContact?: string | null; version?: number | null } | null;
-    hero?: { heading?: string | null; subtitle?: string | null; ctaLabel?: string | null; heroImage?: { assetId?: string | null } | null; version?: number | null } | null;
+    header?: { contactButtonLabel?: string | null; preferredContact?: string | null; logoMediaId?: string | null; version?: number | null } | null;
+    hero?: { heading?: string | null; subtitle?: string | null; ctaLabel?: string | null; heroImage?: { kind?: string | null; assetId?: string | null; mediaId?: string | null } | null; version?: number | null } | null;
     contact?: { heading?: string | null; message?: string | null; version?: number | null } | null;
     about?: { heading?: string | null; story?: string | null; version?: number | null } | null;
     services?: { heading?: string | null; cards?: CardFields[] | null; version?: number | null } | null;
@@ -96,7 +96,10 @@ export function getReadinessIssues(draft: DraftFields, licensedIds: ReadonlySet<
   if (!mapped.agencyName?.trim()) issues.push({ key: 'AGENCY_NAME', message: 'Add your agency name.' });
   if (!hero.heading?.trim()) issues.push({ key: 'HERO_HEADING', message: 'Write a main heading for your website.' });
   if (!mapped.phone && !mapped.whatsapp) issues.push({ key: 'PUBLIC_CONTACT', message: 'Choose a phone or WhatsApp number to show on your website (Agency profile).' });
-  if (!hero.heroImage?.assetId || !licensedIds.has(hero.heroImage.assetId)) issues.push({ key: 'HERO_IMAGE', message: 'Choose a main photo for your website.' });
+  // D-033/D-108: the agency's own attached upload, or a licensed platform default (Phase 3d).
+  const ownUpload = hero.heroImage?.kind === 'UPLOAD' && Boolean(hero.heroImage.mediaId);
+  const licensedDefault = hero.heroImage?.kind !== 'UPLOAD' && Boolean(hero.heroImage?.assetId) && licensedIds.has(hero.heroImage!.assetId!);
+  if (!ownUpload && !licensedDefault) issues.push({ key: 'HERO_IMAGE', message: 'Choose or upload a main photo for your website.' });
   return issues;
 }
 
@@ -153,13 +156,15 @@ export function sectionView(draft: DraftFields, section: SectionKey) {
   }
   if (section === 'header') {
     const header = sections.header ?? {};
-    return { contactButtonLabel: header.contactButtonLabel ?? 'Contact us', preferredContact: header.preferredContact ?? null, version: header.version ?? 0 };
+    return { contactButtonLabel: header.contactButtonLabel ?? 'Contact us', preferredContact: header.preferredContact ?? null, logoMediaId: header.logoMediaId ?? null, version: header.version ?? 0 };
   }
   if (section === 'hero') {
     const hero = sections.hero ?? {};
     return {
       heading: hero.heading ?? '', ...(hero.subtitle ? { subtitle: hero.subtitle } : {}), ctaLabel: hero.ctaLabel ?? 'Contact us',
-      heroImageId: hero.heroImage?.assetId ?? null, version: hero.version ?? 0,
+      heroImageId: hero.heroImage?.kind === 'UPLOAD' ? null : hero.heroImage?.assetId ?? null,
+      heroUploadId: hero.heroImage?.kind === 'UPLOAD' ? hero.heroImage.mediaId ?? null : null,
+      version: hero.version ?? 0,
     };
   }
   const contact = sections.contact ?? {};

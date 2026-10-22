@@ -148,13 +148,15 @@ export const SITE_ICONS = ['home', 'key', 'building', 'handshake', 'document', '
 const draftHeaderSchema = new Schema({
   contactButtonLabel: { type: String, required: true, default: 'Contact us' },
   preferredContact: { type: String, enum: ['WHATSAPP', 'PHONE'] },
+  logoMediaId: { type: String },
   version: { type: Number, required: true, default: 0 },
 }, { _id: false });
 const draftHeroSchema = new Schema({
   heading: { type: String, default: '' },
   subtitle: { type: String },
   ctaLabel: { type: String, required: true, default: 'Contact us' },
-  heroImage: { type: new Schema({ kind: { type: String, enum: ['PLATFORM_DEFAULT'], required: true }, assetId: { type: String, required: true } }, { _id: false }) },
+  // Phase 3d: a licensed platform default (assetId) or the agency's own upload (mediaId).
+  heroImage: { type: new Schema({ kind: { type: String, enum: ['PLATFORM_DEFAULT', 'UPLOAD'], required: true }, assetId: { type: String }, mediaId: { type: String } }, { _id: false }) },
   version: { type: Number, required: true, default: 0 },
 }, { _id: false });
 const draftContactSchema = new Schema({
@@ -258,12 +260,15 @@ const publishedRevisionSchema = new Schema({
   slug: { type: String, required: true, immutable: true },
   site: { type: Schema.Types.Mixed, required: true, immutable: true },
   reason: { type: String, enum: ['FIRST_ACTIVATION', 'PUBLISH_UPDATES'], required: true, immutable: true },
+  // Phase 3d: every media id this revision shows; the public media route serves only these (D-090).
+  mediaIds: { type: [String], default: [], immutable: true },
   // Phase 4b (D-087, D-107): the owner's idempotency key and the content fingerprint used for "Unpublished changes".
   requestId: { type: String, immutable: true },
   contentHash: { type: String, immutable: true },
   createdAt: { type: Date, required: true, default: Date.now, immutable: true },
 }, { versionKey: false, minimize: false });
 publishedRevisionSchema.index({ agencyId: 1, revision: 1 }, { unique: true });
+publishedRevisionSchema.index({ _id: 1, mediaIds: 1 });
 publishedRevisionSchema.index({ agencyId: 1, requestId: 1 }, { unique: true, partialFilterExpression: { requestId: { $type: 'string' } } });
 for (const operation of ['updateOne', 'updateMany', 'findOneAndUpdate', 'replaceOne', 'findOneAndReplace', 'deleteOne', 'deleteMany', 'findOneAndDelete'] as const) {
   publishedRevisionSchema.pre(operation, () => { throw new Error('REVISION_APPEND_ONLY'); });
@@ -287,12 +292,33 @@ const propertySchema = new Schema({
   bathrooms: { type: Number },
   description: { type: String },
   availability: { type: String, enum: PROPERTY_AVAILABILITY, required: true, default: 'AVAILABLE' },
+  // Phase 3d (D-059/D-060): up to 10 photo media ids in display order and an explicit cover.
+  photos: { type: [String], default: [] },
+  coverMediaId: { type: String },
   archivedAt: { type: Date },
   version: { type: Number, required: true, default: 0 },
 }, { timestamps: true });
 propertySchema.index({ agencyId: 1, archivedAt: 1, createdAt: -1, _id: -1 });
 
+// Phase 3d (D-086, D-105, D-106): uploaded images. Originals are private; only WebP variants are ever served.
+const mediaSchema = new Schema({
+  mediaId: { type: String, required: true, unique: true, immutable: true },
+  agencyId: { type: Schema.Types.ObjectId, ref: 'Agency', required: true, immutable: true },
+  purpose: { type: String, enum: ['HERO', 'LOGO', 'PROPERTY'], required: true, immutable: true },
+  status: { type: String, enum: ['STAGED', 'ATTACHED'], required: true, default: 'STAGED' },
+  width: { type: Number, required: true },
+  height: { type: Number, required: true },
+  bytes: { type: Number, required: true },
+  contentType: { type: String, required: true },
+  originalKey: { type: String, required: true },
+  variants: { type: [new Schema({ width: { type: Number, required: true }, key: { type: String, required: true }, bytes: { type: Number, required: true } }, { _id: false })], default: [] },
+  attachedAt: { type: Date },
+}, { timestamps: true });
+mediaSchema.index({ status: 1, createdAt: 1 });
+mediaSchema.index({ agencyId: 1, purpose: 1 });
+
 export const Agency = mongoose.model('Agency', agencySchema);
+export const Media = mongoose.model('Media', mediaSchema);
 export const Property = mongoose.model('Property', propertySchema);
 export const PublishedRevision = mongoose.model('PublishedRevision', publishedRevisionSchema);
 export const WebsiteDraft = mongoose.model('WebsiteDraft', websiteDraftSchema);

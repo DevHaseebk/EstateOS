@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { SiteTemplate, siteModelFromWebsite, THEME_DESCRIPTIONS, THEME_LABELS, THEME_PRESETS, type ThemePreset, type WebsiteData } from 'site-template';
 import { OwnerPage } from '../../components/OwnerPage';
 import { ApiError, apiMutation } from '../../lib/api';
-import { useWebsite } from '../../lib/website';
+import { ownerMediaUrl, useWebsite } from '../../lib/website';
 
 // D-049: browsing a candidate never saves it; only Apply theme does. Cancel keeps the saved theme.
 function ThemeSelection() {
@@ -56,7 +56,7 @@ function ThemeSelection() {
     {message && <p className={message.kind === 'error' ? 'form-error' : 'form-notice'} role={message.kind === 'error' ? 'alert' : 'status'}>{message.text}</p>}
     <section aria-label="Theme preview" className="preview-frame">
       <p className="preview-label">{changed ? `Preview of ${THEME_LABELS[shown]} — not applied` : saved ? `Your saved theme: ${THEME_LABELS[shown]}` : 'Theme not chosen yet — showing Modern Light'}</p>
-      <div className="preview-canvas"><SiteTemplate model={siteModelFromWebsite(website, shown)} /></div>
+      <div className="preview-canvas"><SiteTemplate model={siteModelFromWebsite(website, shown, { mediaUrl: ownerMediaUrl })} /></div>
     </section>
   </>;
 }

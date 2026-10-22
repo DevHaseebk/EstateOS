@@ -9,8 +9,8 @@ export type LayoutData = { order: OptionalSection[]; visible: Record<'about' | '
 export type WebsiteData = {
   theme: { preset: ThemePreset | null; version: number };
   sections: {
-    header: { contactButtonLabel: string; preferredContact: 'WHATSAPP' | 'PHONE' | null; version: number };
-    hero: { heading: string; subtitle?: string; ctaLabel: string; heroImageId: string | null; version: number };
+    header: { contactButtonLabel: string; preferredContact: 'WHATSAPP' | 'PHONE' | null; logoMediaId?: string | null; version: number };
+    hero: { heading: string; subtitle?: string; ctaLabel: string; heroImageId: string | null; heroUploadId?: string | null; version: number };
     contact: { heading: string; message?: string; version: number };
     about: { heading: string; story?: string; version: number };
     services: { heading: string; cards: (CardData & { description?: string })[]; version: number };
@@ -37,15 +37,25 @@ export type WebsiteData = {
 /** The renderable part of a website: the saved draft, or a frozen published revision (Phase 4a, D-090). */
 export type SiteContent = Pick<WebsiteData, 'theme' | 'sections' | 'layout' | 'mapped' | 'properties'>;
 
+/**
+ * Phase 3d: how the current host turns an uploaded media id into an image URL (owner preview, Super Admin preview
+ * or the public site). Without it, uploaded images are simply not shown.
+ */
+export type MediaUrl = (mediaId: string, width: 480 | 960 | 1600) => string;
+const srcSet = (mediaUrl: MediaUrl, id: string, widths: (480 | 960 | 1600)[]) => widths.map((width) => `${mediaUrl(id, width)} ${width}w`).join(', ');
+
 /** Phase 3c §3: a section is shown only when switched on AND it has its minimum content (never an empty section). */
-function optionalBlocks(website: SiteContent): OptionalBlock[] {
+function optionalBlocks(website: SiteContent, mediaUrl?: MediaUrl): OptionalBlock[] {
   const { about, services, whyChooseUs, team } = website.sections;
   const blocks: OptionalBlock[] = [];
   for (const key of website.layout.order) {
     if (!website.layout.visible[key]) continue;
     // Never an empty section and never fake listings (D-032, D-078): only real eligible properties, newest first.
     if (key === 'properties') {
-      const items = (website.properties ?? []).slice(0, website.sections.properties?.displayCount ?? 6);
+      const items = (website.properties ?? []).slice(0, website.sections.properties?.displayCount ?? 6).map((property) => (
+        property.coverMediaId && mediaUrl
+          ? { ...property, coverUrl: mediaUrl(property.coverMediaId, 960), coverSrcSet: srcSet(mediaUrl, property.coverMediaId, [480, 960]) }
+          : property));
       if (items.length) blocks.push({ key, heading: website.sections.properties?.heading ?? 'Our properties', items });
       continue;
     }
@@ -58,16 +68,20 @@ function optionalBlocks(website: SiteContent): OptionalBlock[] {
 }
 
 /** Saved draft → render model (D-052: saved content and the applied theme only). Modern Light stands in until a theme is chosen. */
-export function siteModelFromWebsite(website: SiteContent, themeOverride?: ThemePreset): SiteModel {
+export function siteModelFromWebsite(website: SiteContent, themeOverride?: ThemePreset, options: { mediaUrl?: MediaUrl } = {}): SiteModel {
   const { header, hero, contact } = website.sections;
-  const imageUrl = hero.heroImageId ? HERO_IMAGE_SRC[hero.heroImageId] : undefined;
+  const { mediaUrl } = options;
+  const upload = hero.heroUploadId && mediaUrl ? hero.heroUploadId : null;
+  const imageUrl = upload ? mediaUrl!(upload, 1600) : hero.heroImageId ? HERO_IMAGE_SRC[hero.heroImageId] : undefined;
+  const imageSrcSet = upload ? srcSet(mediaUrl!, upload, [960, 1600]) : undefined;
+  const logoUrl = header.logoMediaId && mediaUrl ? mediaUrl(header.logoMediaId, 480) : undefined;
   return {
     theme: themeOverride ?? website.theme.preset ?? 'MODERN_LIGHT',
     agencyName: website.mapped.agencyName ?? '',
-    header: { contactButtonLabel: header.contactButtonLabel, preferredContact: header.preferredContact },
-    hero: { heading: hero.heading, ...(hero.subtitle ? { subtitle: hero.subtitle } : {}), ctaLabel: hero.ctaLabel, ...(imageUrl ? { imageUrl } : {}) },
+    header: { contactButtonLabel: header.contactButtonLabel, preferredContact: header.preferredContact, ...(logoUrl ? { logoUrl } : {}) },
+    hero: { heading: hero.heading, ...(hero.subtitle ? { subtitle: hero.subtitle } : {}), ctaLabel: hero.ctaLabel, ...(imageUrl ? { imageUrl } : {}), ...(imageSrcSet ? { imageSrcSet } : {}) },
     contact: { heading: contact.heading, ...(contact.message ? { message: contact.message } : {}) },
-    optional: optionalBlocks(website),
+    optional: optionalBlocks(website, mediaUrl),
     contacts: {
       phone: website.mapped.phone, whatsapp: website.mapped.whatsapp, publicEmail: website.mapped.publicEmail,
       officeAddress: website.mapped.officeAddress, city: website.mapped.city,

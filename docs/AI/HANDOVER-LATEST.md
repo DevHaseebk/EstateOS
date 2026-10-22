@@ -1,3 +1,50 @@
+# EstateOS — Phase 3d photo uploads: implemented and verified by Claude (2026-10-22)
+
+## Current task
+- Contract: `docs/PHASE-3D-PHOTO-UPLOADS-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 7 confirmations.
+- Git: branch `master`, HEAD `6c38d62` (pushed). **All Phase 3d work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-033, D-035, D-059, D-060, D-084, D-086, D-089, D-090, D-105 (interface), D-106, D-107, D-108, D-110, D-111, D-115.
+
+## Work completed
+- **Dependency**: `sharp` ^0.35.5 in `backend` (prebuilt native binary; libvips 8.18.7). `.gitignore` adds `backend/.media-dev/`.
+- **Backend**
+  - `storage.ts`: `MediaStorage` interface plus a local-disk driver (`MEDIA_DIR` override; key validation). The S3/R2 driver comes at deploy time.
+  - `media.ts`:
+    - content sniffing (JPEG/PNG/WebP magic bytes) and the 5 MB limit;
+    - a full decode (pixel limit 40 M, auto-orient); minimum sizes HERO 1200 px wide and landscape, LOGO 64², PROPERTY 400×300;
+    - WebP q80 at 480/960/1600 (never upscaled; a smaller original gets one variant at its own width);
+    - `stageUpload`, `attachMedia` (agency + purpose check), `pickVariant`, `cleanupStagedMedia` (STAGED older than 24 h, files too).
+  - `models.ts`:
+    - `Media` (random 32-hex `mediaId`, purpose, STAGED/ATTACHED, private `originalKey`, variants);
+    - Hero `heroImage.kind` UPLOAD/`mediaId`; header `logoMediaId`; `Property.photos`/`coverMediaId`;
+    - `PublishedRevision.mediaIds`.
+  - `media-routes.ts`: `POST /owner/media?purpose=` (raw body via route-level `express.raw`; image-only CSRF types; 60/hour per agency; `WEBSITE_READ_ONLY`/`AGENCY_DEACTIVATED`), `GET /owner/media/:id/:w`, `GET /super-admin/media/:id/:w` (attached only).
+  - `public-routes.ts`: `GET /public/media/:id/:w`, served only if the id is in the agency's current Live revision `mediaIds` and the agency is Live and unrestricted.
+  - `auth.ts`: `requireCsrf` takes allowed content types; `countAttempt` exported; a body-too-large error maps to 422 `TOO_LARGE`.
+  - Saves: Hero `heroUploadId` (exclusive with `heroImageId`); Header `logoMediaId`; property `photos` (≤10, unique) and `coverMediaId` (must be in photos; defaults to the first).
+  - Readiness: HERO_IMAGE is met by an UPLOAD or a licensed default. `snapshotMediaIds` is stored on revisions. The server runs an hourly staged-media cleanup.
+- **BFF**: the owner facade forwards raw bytes for all mutations and adds the upload and image routes; image responses pass through as bytes. The Super Admin facade adds the image route. `frontend/app/media/[mediaId]/[width]/route.ts` proxies the public image route with the public key only.
+- **site-template**: `siteModelFromWebsite(site, theme, { mediaUrl })`; the Hero `<img>` with `srcset` under the overlay; the header logo; property cover `<img>` with `srcset` and `alt` = title.
+- **Agency Admin**: `ImageUpload` (Hero/logo), `PhotoGallery` (multi-upload, per-file errors, cover, move, remove; Save is blocked while uploading), `lib/media.ts`, `ownerMediaUrl`, card cover thumbnails.
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (5 workspaces) → exit 0.
+- `npm test -w backend` → **123/123** (new `test/media.test.ts`, 11 tests, including EXIF/GPS stripping, sniffing, sizes, staging and visibility, the public revision rule, cleanup and rate limit; `bff.test.ts` +1; the 3a BFF assertion now decodes the raw bytes).
+- HTTPS end-to-end check with a **new synthetic agency** (`6ad99f399be17f0816ead34c`, credentials in the gitignored `backend/.env.e2e-3d-dev.local`), **no fixture**:
+  - a text file uploaded as JPEG → UNSUPPORTED_TYPE;
+  - Hero upload (synthetic JPEG with GPS EXIF) → the owner variant is WebP 1600×889 with `exif=false`; not public before Live (404);
+  - Hero save → ready; Approve → Live; the public page uses `/media/<id>/1600` and the srcset; the public image is 200 image/webp;
+  - property photo → saved (404 publicly before publish) → publish → the cover is 200 and on the page;
+  - Super Admin image 200; the admin editor and properties pages 200.
+- Not verified: a visual click-through in a browser.
+
+## Handoff
+- At deploy time: implement the S3-compatible (R2) `MediaStorage` driver plus CDN with the owner's account (D-105, D-114).
+- Next small phase: 3e About/Team photos (same pipeline). Then a deploy/staging phase.
+- Preserve: originals are never served; public images only through the current Live revision; uploads are staged until a save attaches them.
+
+---
+
 # EstateOS — Phase 5a Properties (without photos): implemented and verified by Claude (2026-10-22)
 
 ## Current task

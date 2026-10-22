@@ -73,6 +73,9 @@ export const profileSchema = z.strictObject({
   expectedProfileVersion: z.number().int().min(0),
 });
 
+// Phase 3d: random 32-hex public media ids.
+const mediaId = z.string().regex(/^[a-f0-9]{32}$/, 'Unknown image');
+
 // Phase 3b My Website contract §1 Q4 and §6: text limits and strict section bodies.
 const sectionText = (min: number, max: number) => z.string().trim()
   .min(min, `Must be at least ${min} characters`).max(max, `Must be at most ${max} characters`);
@@ -88,6 +91,8 @@ export const sectionSchemas = {
   header: z.strictObject({
     contactButtonLabel: sectionText(2, 30),
     preferredContact: z.enum(['WHATSAPP', 'PHONE']).nullable().optional(),
+    // Phase 3d: an uploaded logo (purpose LOGO); null removes it.
+    logoMediaId: mediaId.nullable().optional(),
     expectedVersion: z.number().int().min(0),
   }),
   hero: z.strictObject({
@@ -95,8 +100,10 @@ export const sectionSchemas = {
     subtitle: optionalSectionText(160),
     ctaLabel: sectionText(2, 30),
     heroImageId: z.string().max(100).nullable().optional(),
+    // Phase 3d: the agency's own uploaded Hero photo (purpose HERO). At most one of the two may be chosen.
+    heroUploadId: mediaId.nullable().optional(),
     expectedVersion: z.number().int().min(0),
-  }),
+  }).refine((input) => !(input.heroImageId && input.heroUploadId), { message: 'Choose either a platform photo or your own upload', path: ['heroUploadId'] }),
   contact: z.strictObject({
     heading: sectionText(3, 80),
     message: optionalSectionText(300),
@@ -167,15 +174,22 @@ const propertyFields = {
   bedrooms: roomCount,
   bathrooms: roomCount,
   description: optionalSectionText(2000),
+  // Phase 3d (D-059/D-060): 0–10 photos in display order and an explicit cover (defaults to the first photo).
+  photos: z.array(mediaId).max(10, 'At most 10 photos per property').default([])
+    .refine((photos) => new Set(photos).size === photos.length, 'Each photo can be added only once'),
+  coverMediaId: mediaId.nullable().optional().transform((value) => value ?? undefined),
 };
+const coverInPhotos = (input: { photos: string[]; coverMediaId?: string }) => !input.coverMediaId || input.photos.includes(input.coverMediaId);
 /** Phase 5a §1 Q3: Sold only for Sale listings, Rented only for Rent listings. */
 const fitsIntent = (input: { intent: string; availability?: string }) =>
   !(input.availability === 'SOLD' && input.intent !== 'SALE') && !(input.availability === 'RENTED' && input.intent !== 'RENT');
-export const createPropertySchema = z.strictObject(propertyFields);
+export const createPropertySchema = z.strictObject(propertyFields)
+  .refine(coverInPhotos, { message: 'The cover must be one of the photos', path: ['coverMediaId'] });
 export const updatePropertySchema = z.strictObject({
   ...propertyFields,
   availability: z.enum(['AVAILABLE', 'SOLD', 'RENTED']),
   expectedVersion: z.number().int().min(0),
-}).refine(fitsIntent, { message: 'Sold is only for For Sale listings and Rented only for For Rent listings', path: ['availability'] });
+}).refine(fitsIntent, { message: 'Sold is only for For Sale listings and Rented only for For Rent listings', path: ['availability'] })
+  .refine(coverInPhotos, { message: 'The cover must be one of the photos', path: ['coverMediaId'] });
 export const propertyVersionSchema = z.strictObject({ expectedVersion: z.number().int().min(0) });
 export const propertyListQuerySchema = z.strictObject({ archived: z.enum(['true', 'false']).default('false') });

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { SiteTemplate, siteModelFromWebsite } from 'site-template';
 import { OwnerPage } from '../../components/OwnerPage';
-import { useWebsite } from '../../lib/website';
+import { ownerMediaUrl, useWebsite } from '../../lib/website';
 
 // D-052 / D-101: saved draft + applied theme only, inside the authenticated management host. Never public.
 function Preview() {
@@ -22,7 +22,7 @@ function Preview() {
         <Link href="/website/editor" className="back-link">Edit website</Link>
       </span>
     </div>
-    <div className={`preview-canvas preview-${width}`}><SiteTemplate model={siteModelFromWebsite(website)} /></div>
+    <div className={`preview-canvas preview-${width}`}><SiteTemplate model={siteModelFromWebsite(website, undefined, { mediaUrl: ownerMediaUrl })} /></div>
   </>;
 }
 

@@ -84,6 +84,14 @@ The Phase 5a contract is **APPROVED** (2026-10-22) and **implemented and verifie
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 111/111; server-render checks pass.
 - The HTTPS end-to-end check passed after the owner added the new IP in Atlas Network Access (properties published; Sold removed after publish).
 
+## Phase 3d status (2026-10-22)
+
+The Phase 3d contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-3D-PHOTO-UPLOADS-CONTRACT-APPROVED.md`.
+
+- Built: the storage interface with a local-disk driver (`backend/.media-dev/`, gitignored); `sharp` processing to WebP 480/960/1600 with metadata stripped and private originals; staged uploads attached on save and expired after 24 hours; Hero upload (satisfies readiness), logo, and the property gallery; public images only from the current Live revision.
+- Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 123/123; the HTTPS end-to-end check passed with a real uploaded Hero, **with no fixture**.
+- Owner-supplied licensed defaults are now optional: agencies can go Live with their own photo.
+
 ## Next gate (written before Phase 1; kept for history)
 
 Review actual repo/active Git diff; reconcile AI setup; document Phase 1 exact server session/CSRF/dev host, agency/user/session bootstrap/recovery, tenant-scoping and versioned auth API contracts with tests. Obtain explicit owner approval **before auth/tenant business code**. Suggested prompt: `docs/AI/PHASE-1-AUTH-TENANT-CODEX-PROMPT.md`.

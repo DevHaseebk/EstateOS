@@ -27,7 +27,9 @@ function OptionalSectionView({ block, contacts }: { block: OptionalBlock; contac
           const enquiry = enquiryLink(property.title, location, contacts);
           const facts = propertyFacts(property);
           return <li key={property.key} className="est-card est-property">
-            <div className="est-property-visual" aria-hidden="true"><SiteIconGlyph icon={property.type === 'PLOT' ? 'map-pin' : property.type === 'SHOP' || property.type === 'OFFICE' ? 'building' : 'home'} /></div>
+            {property.coverUrl
+              ? <img className="est-property-photo" src={property.coverUrl} srcSet={property.coverSrcSet} sizes="(min-width: 1024px) 380px, (min-width: 768px) 50vw, 100vw" alt={property.title} loading="lazy" decoding="async" />
+              : <div className="est-property-visual" aria-hidden="true"><SiteIconGlyph icon={property.type === 'PLOT' ? 'map-pin' : property.type === 'SHOP' || property.type === 'OFFICE' ? 'building' : 'home'} /></div>}
             <div className="est-property-body">
               <p className="est-property-meta"><span className="est-pill">{INTENT_LABELS[property.intent]}</span> {PROPERTY_TYPE_LABELS[property.type]}</p>
               <h3 className="est-h3">{property.title}</h3>
@@ -95,7 +97,9 @@ export function SiteTemplate({ model }: { model: SiteModel }) {
     <div className="est-page">
       <header className="est-header">
         <div className="est-container est-header-inner">
-          <span className="est-brand">{model.agencyName}</span>
+          {model.header.logoUrl
+            ? <img className="est-logo" src={model.header.logoUrl} alt={model.agencyName} />
+            : <span className="est-brand">{model.agencyName}</span>}
           {model.optional.length > 0 && <nav className="est-nav" aria-label="Sections">
             {model.optional.map((block) => <a key={block.key} href={`#${block.key}`}>{NAV_LABELS[block.key]}</a>)}
             <a href="#contact">Contact</a>
@@ -106,8 +110,8 @@ export function SiteTemplate({ model }: { model: SiteModel }) {
         </div>
       </header>
 
-      <section className={`est-hero${model.hero.imageUrl ? '' : ' est-hero-no-image'}`} aria-labelledby="est-hero-title"
-        style={model.hero.imageUrl ? { backgroundImage: `url("${model.hero.imageUrl}")` } : undefined}>
+      <section className={`est-hero${model.hero.imageUrl ? '' : ' est-hero-no-image'}`} aria-labelledby="est-hero-title">
+        {model.hero.imageUrl && <img className="est-hero-img" src={model.hero.imageUrl} srcSet={model.hero.imageSrcSet} sizes="100vw" alt="" fetchPriority="high" decoding="async" />}
         <div className="est-hero-overlay" />
         <div className="est-container est-hero-content">
           {model.hero.heading && <h1 id="est-hero-title" className="est-hero-title">{model.hero.heading}</h1>}

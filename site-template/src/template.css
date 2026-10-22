@@ -97,7 +97,12 @@
 @container (min-width: 1024px) {
   .est-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-/* Phase 5a public property cards (no photos yet: a neutral visual). */
+/* Phase 3d: uploaded photos. The Hero image sits under the D-043 overlay; covers keep a 16:9 crop. */
+.est-hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.est-logo { display: block; max-height: 48px; max-width: 200px; width: auto; height: auto; object-fit: contain; }
+.est-property-photo { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+
+/* Phase 5a public property cards (a neutral visual when there is no photo). */
 .est-property { display: grid; padding: 0; overflow: hidden; }
 .est-property-visual { display: grid; place-items: center; aspect-ratio: 16 / 9; background: color-mix(in srgb, var(--est-accent) 12%, var(--est-surface)); color: var(--est-accent); }
 .est-property-visual svg { width: 40px; height: 40px; }

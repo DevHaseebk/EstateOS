@@ -9,3 +9,6 @@ dist/
 .DS_Store
 Thumbs.db
 npm-debug.log*
+
+# Phase 3d: local development media storage (never committed)
+backend/.media-dev/

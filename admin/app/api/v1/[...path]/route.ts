@@ -9,7 +9,9 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
   const { path } = await context.params;
   const route = `/api/v1/${path.join('/')}`;
   const allowed = (request.method === 'GET' && (['/api/v1/auth/csrf', '/api/v1/owner/session', '/api/v1/owner/profile', '/api/v1/owner/website', '/api/v1/owner/properties'].includes(route) ||
-      /^\/api\/v1\/owner\/(agencies|properties)\/[a-f0-9]{24}$/i.test(route))) ||
+      /^\/api\/v1\/owner\/(agencies|properties)\/[a-f0-9]{24}$/i.test(route) ||
+      /^\/api\/v1\/owner\/media\/[a-f0-9]{32}\/\d{2,4}$/.test(route))) ||
+    (request.method === 'POST' && route === '/api/v1/owner/media') ||
     (request.method === 'PUT' && (['/api/v1/owner/profile', '/api/v1/owner/website/theme', '/api/v1/owner/website/layout'].includes(route) ||
       /^\/api\/v1\/owner\/website\/sections\/(header|hero|contact|about|services|whyChooseUs|team|properties)$/.test(route) ||
       /^\/api\/v1\/owner\/properties\/[a-f0-9]{24}$/i.test(route))) ||
@@ -43,13 +45,20 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
     upstream = await fetch(`${api}${route}${request.nextUrl.search}`, {
       method: request.method,
       headers,
-      body: unsafe && request.method !== 'DELETE' ? await request.text() : undefined,
+      // Raw bytes, so Phase 3d image uploads reach the backend untouched (JSON bodies are unaffected).
+      body: unsafe && request.method !== 'DELETE' ? Buffer.from(await request.arrayBuffer()) : undefined,
       cache: 'no-store',
       redirect: 'manual',
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(route === '/api/v1/owner/media' ? 30000 : 8000),
     });
   } catch {
     return NextResponse.json({ error: { code: 'AUTH_UNAVAILABLE', message: 'Authentication is unavailable' } }, { status: 503 });
+  }
+  // Phase 3d: images pass through as bytes with the backend's cache header (never JSON, never cookies).
+  if (upstream.ok && upstream.headers.get('content-type')?.startsWith('image/')) {
+    return new NextResponse(await upstream.arrayBuffer(), { status: 200, headers: {
+      'Content-Type': upstream.headers.get('content-type')!, 'Cache-Control': upstream.headers.get('cache-control') ?? 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff',
+    } });
   }
   const body = upstream.status === 204 ? null : await upstream.json().catch(() => null);
   const response = upstream.status === 204 ? new NextResponse(null, { status: 204 }) : NextResponse.json(body?.internal ? { data: body.data } : body, { status: upstream.status });

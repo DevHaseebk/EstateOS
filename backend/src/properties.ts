@@ -8,6 +8,7 @@ type PropertyDoc = {
   _id: Types.ObjectId; title: string; intent: string; type: string; pricePkr: number; city: string; area: string;
   size?: { value: number; unit: string } | null; bedrooms?: number | null; bathrooms?: number | null; description?: string | null;
   availability: string; archivedAt?: Date | null; version?: number | null; createdAt?: Date; updatedAt?: Date;
+  photos?: string[] | null; coverMediaId?: string | null;
 };
 const defined = <T extends object>(value: T) => Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined && entry !== null)) as T;
 
@@ -20,6 +21,9 @@ export function publicPropertyView(property: PropertyDoc) {
     key: String(property._id), title: property.title, intent: property.intent, type: property.type, pricePkr: property.pricePkr,
     city: property.city, area: property.area, size: property.size ? { value: property.size.value, unit: property.size.unit } : undefined,
     bedrooms: property.bedrooms, bathrooms: property.bathrooms, description: property.description,
+    // Phase 3d: gallery order and the cover (the first photo when none is chosen).
+    photos: property.photos?.length ? [...property.photos] : undefined,
+    coverMediaId: property.photos?.length ? (property.coverMediaId ?? property.photos[0]) : undefined,
   });
 }
 

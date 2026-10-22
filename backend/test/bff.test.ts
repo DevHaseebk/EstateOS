@@ -132,7 +132,8 @@ test('Phase 3a profile routes: GET and PUT on the owner portal only', async () =
     }), ctx(['owner', 'profile']));
     assert.equal(save.status, 200);
     assert.equal(forwarded.at(-1)?.method, 'PUT');
-    assert.equal(forwarded.at(-1)?.body, '{"expectedProfileVersion":0}');
+    // Phase 3d: the BFF forwards raw bytes (so image uploads arrive untouched); the JSON content is identical.
+    assert.equal(Buffer.from(forwarded.at(-1)?.body as Uint8Array).toString('utf8'), '{"expectedProfileVersion":0}');
     const forwardedCount = forwarded.length;
     const foreign = await owner.PUT(new NextRequest('https://admin.estateos.localhost/api/v1/owner/profile', {
       method: 'PUT', headers: { origin: 'https://attacker.example', 'content-type': 'application/json' }, body: '{}',
@@ -251,5 +252,50 @@ test('Phase 5a property routes: owner CRUD paths and Super Admin read-only list'
     assert.equal((await ownerReq('GET', ['super-admin', 'agencies', id, 'properties'])).status, 404);
     assert.equal((await superAdmin.GET(new NextRequest('https://control.estateos.localhost/api/v1/owner/properties'), ctx(['owner', 'properties']))).status, 404);
     assert.equal(forwarded.length, forwardedCount);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('Phase 3d media: binary uploads forwarded untouched, images passed through, public proxy uses only the public key', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: { url: string; body?: unknown; headers?: HeadersInit }[] = [];
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 250]);
+  globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => {
+    calls.push({ url: String(input), body: init?.body, headers: init?.headers });
+    return String(input).includes('/media/') && !String(input).endsWith('/owner/media?purpose=PROPERTY')
+      ? new Response(new Uint8Array([82, 73, 70, 70]), { headers: { 'content-type': 'image/webp', 'cache-control': 'private, max-age=3600' } })
+      : Response.json({ data: { media: { id: 'a'.repeat(32) } } }, { status: 201 });
+  };
+  const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
+  const id = 'e'.repeat(32);
+  try {
+    const uploaded = await owner.POST(new NextRequest('https://admin.estateos.localhost/api/v1/owner/media?purpose=PROPERTY', {
+      method: 'POST', headers: { origin: 'https://admin.estateos.localhost', 'content-type': 'image/png' }, body: png,
+    }), ctx(['owner', 'media']));
+    assert.equal(uploaded.status, 201);
+    assert.deepEqual(Buffer.from(calls.at(-1)!.body as Uint8Array), png);
+    assert.match(calls.at(-1)!.url, /\/api\/v1\/owner\/media\?purpose=PROPERTY$/);
+    const ownerImage = await owner.GET(new NextRequest(`https://admin.estateos.localhost/api/v1/owner/media/${id}/960`), ctx(['owner', 'media', id, '960']));
+    assert.equal(ownerImage.status, 200);
+    assert.equal(ownerImage.headers.get('content-type'), 'image/webp');
+    assert.equal(ownerImage.headers.get('set-cookie'), null);
+    assert.deepEqual(Buffer.from(await ownerImage.arrayBuffer()), Buffer.from([82, 73, 70, 70]));
+    const superImage = await superAdmin.GET(new NextRequest(`https://control.estateos.localhost/api/v1/super-admin/media/${id}/480`), ctx(['super-admin', 'media', id, '480']));
+    assert.equal(superImage.status, 200);
+    const forwarded = calls.length;
+    assert.equal((await owner.GET(new NextRequest(`https://admin.estateos.localhost/api/v1/owner/media/${id}/abc`), ctx(['owner', 'media', id, 'abc']))).status, 404);
+    assert.equal((await owner.GET(new NextRequest('https://admin.estateos.localhost/api/v1/owner/media/short/960'), ctx(['owner', 'media', 'short', '960']))).status, 404);
+    assert.equal((await superAdmin.POST(new NextRequest('https://control.estateos.localhost/api/v1/owner/media', {
+      method: 'POST', headers: { origin: 'https://control.estateos.localhost', 'content-type': 'image/png' }, body: png,
+    }), ctx(['owner', 'media']))).status, 404);
+    assert.equal(calls.length, forwarded);
+
+    process.env.PUBLIC_API_KEY = 'test-public-api-key-with-at-least-thirty-two-characters-x';
+    const { GET: publicImage } = await import('../../frontend/app/media/[mediaId]/[width]/route.ts');
+    const served = await publicImage(new Request(`https://x.sites.estateos.localhost/media/${id}/1600`), { params: Promise.resolve({ mediaId: id, width: '1600' }) });
+    assert.equal(served.status, 200);
+    const call = calls.at(-1)!;
+    assert.match(call.url, new RegExp(`/api/v1/public/media/${id}/1600$`));
+    assert.deepEqual(Object.keys(call.headers as Record<string, string>), ['x-public-api-key']);
+    assert.equal((await publicImage(new Request('https://x/media/bad/1600'), { params: Promise.resolve({ mediaId: 'bad', width: '1600' }) })).status, 404);
   } finally { globalThis.fetch = originalFetch; }
 });

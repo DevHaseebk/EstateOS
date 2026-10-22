@@ -59,6 +59,17 @@ export function adminPublicationView(agency: PublicationFields) {
 
 type SnapshotAgency = Parameters<typeof websiteView>[0];
 /** The public material of one revision (D-090): exactly what the template renders, including eligible properties (Phase 5a). */
+/** Phase 3d: every media id a snapshot shows (Hero upload, logo, property photos). The public image route serves only these. */
+export function snapshotMediaIds(site: Awaited<ReturnType<typeof buildSnapshot>>): string[] {
+  const ids = new Set<string>();
+  const hero = site.sections.hero as { heroUploadId?: string | null };
+  const header = site.sections.header as { logoMediaId?: string | null };
+  if (hero.heroUploadId) ids.add(hero.heroUploadId);
+  if (header.logoMediaId) ids.add(header.logoMediaId);
+  for (const property of site.properties as { photos?: string[] }[]) for (const id of property.photos ?? []) ids.add(id);
+  return [...ids];
+}
+
 export async function buildSnapshot(agency: SnapshotAgency, draft: DraftFields, session?: mongoose.ClientSession) {
   const view = websiteView(agency, draft, false);
   return { theme: view.theme, sections: view.sections, layout: view.layout, mapped: view.mapped, properties: await eligibleProperties(agency._id, session) };
@@ -125,7 +136,7 @@ export async function publishUpdates(input: { agencyId: string; ownerUserId: str
       const now = new Date();
       const [revision] = await PublishedRevision.create([{
         agencyId: agency._id, revision: live.revision + 1, slug: agency.publication.slug, site, reason: 'PUBLISH_UPDATES',
-        requestId: input.requestId, contentHash, createdAt: now,
+        requestId: input.requestId, contentHash, mediaIds: snapshotMediaIds(site), createdAt: now,
       }], { session });
       const swapped = await Agency.updateOne(
         { _id: agency._id, publicationStatus: 'LIVE', restrictionStatus: 'NONE', 'publication.liveRevisionId': live._id },
@@ -180,7 +191,7 @@ export async function tryFirstActivation(agencyId: Types.ObjectId | string): Pro
         const slug = current.publication?.slug ?? await pickSlug(current.name, session);
         const site = await buildSnapshot(current, draft!, session);
         const now = new Date();
-        const [revision] = await PublishedRevision.create([{ agencyId: current._id, revision: 1, slug, site, reason: 'FIRST_ACTIVATION', contentHash: contentFingerprint(site), createdAt: now }], { session });
+        const [revision] = await PublishedRevision.create([{ agencyId: current._id, revision: 1, slug, site, reason: 'FIRST_ACTIVATION', contentHash: contentFingerprint(site), mediaIds: snapshotMediaIds(site), createdAt: now }], { session });
         const fromStatus = current.publicationStatus ?? 'NEVER_PUBLISHED';
         const result = await Agency.updateOne(
           { _id: current._id, publicationStatus: { $in: ['NEVER_PUBLISHED', 'ACTIVATION_PENDING'] }, reviewStatus: 'APPROVED', restrictionStatus: 'NONE' },

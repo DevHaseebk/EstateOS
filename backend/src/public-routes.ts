@@ -2,7 +2,8 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 import { requireDatabase } from './config/database.js';
 import { env } from './config/env.js';
 import { asyncRoute, HttpError } from './auth.js';
-import { Agency, PublishedRevision } from './models.js';
+import { Agency, Media, PublishedRevision } from './models.js';
+import { MEDIA_ID, sendVariant } from './media-routes.js';
 import { SLUG_PATTERN } from './publication.js';
 import { secureEqual } from './security.js';
 
@@ -30,6 +31,18 @@ router.get('/sites/:slug', asyncRoute(async (request, response) => {
   const revision = await PublishedRevision.findOne({ _id: agency.publication.liveRevisionId, agencyId: agency._id }).lean();
   if (!revision) throw notAvailable();
   response.json({ data: { site: revision.site, revision: revision.revision, publishedAt: revision.createdAt } });
+}));
+
+// Phase 3d §1 Q7: an image is public only while it is shown by the agency's CURRENT Live revision and the agency is unrestricted.
+router.get('/media/:mediaId/:width', asyncRoute(async (request, response) => {
+  const mediaId = String(request.params.mediaId);
+  if (!MEDIA_ID.test(mediaId)) throw notAvailable();
+  const media = await Media.findOne({ mediaId, status: 'ATTACHED' }).select('agencyId variants').lean();
+  if (!media) throw notAvailable();
+  const agency = await Agency.findById(media.agencyId).select('publicationStatus restrictionStatus publication').lean();
+  if (!agency || agency.publicationStatus !== 'LIVE' || (agency.restrictionStatus ?? 'NONE') !== 'NONE' || !agency.publication?.liveRevisionId) throw notAvailable();
+  if (!await PublishedRevision.exists({ _id: agency.publication.liveRevisionId, mediaIds: mediaId })) throw notAvailable();
+  await sendVariant(response, media.variants, String(request.params.width), 'public');
 }));
 
 router.use(() => { throw notAvailable(); });

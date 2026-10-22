@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { asyncRoute, currentSession, HttpError, rejectAgencyInput, requireCsrf, requireOwnerWritable, requirePortal, type AuthRequest } from './auth.js';
 import { Agency, Property, WebsiteDraft } from './models.js';
 import { ELIGIBLE_FILTER, eligibleProperties } from './properties.js';
+import { attachMedia } from './media.js';
 import { ownerCanEdit, ReviewError } from './review.js';
 import { afterReadinessChange, livePublicationDetails, ownerPublicationView, publishUpdates } from './publication.js';
 import { ownerScope, superAdminScope, tenantAgencyFilter } from './tenant.js';
@@ -37,7 +38,7 @@ function contentOf(set: Record<string, unknown>, path: string) {
 }
 
 /** Validates one section body and builds its $set / $unset. Optional text left empty is removed, never stored as "". */
-function sectionUpdate(key: Section, body: unknown, draft: DraftFields, path: string) {
+async function sectionUpdate(key: Section, body: unknown, draft: DraftFields, path: string, agencyId: string) {
   const set: Record<string, unknown> = {};
   const unset: Record<string, ''> = {};
   const put = (field: string, value: unknown) => { if (value === undefined || value === null) unset[`${path}.${field}`] = ''; else set[`${path}.${field}`] = value; };
@@ -48,14 +49,19 @@ function sectionUpdate(key: Section, body: unknown, draft: DraftFields, path: st
     if (preferred === 'WHATSAPP' && !draft.mapped?.whatsapp) fieldError('preferredContact', 'Choose your WhatsApp number as public first (Agency profile).');
     put('contactButtonLabel', input.contactButtonLabel);
     put('preferredContact', preferred);
+    // Phase 3d §1 Q5: the save attaches the staged logo; any id that is not this agency's LOGO media is refused.
+    if (input.logoMediaId && (await attachMedia(agencyId, 'LOGO', [input.logoMediaId])).length) fieldError('logoMediaId', 'Upload the logo again.');
+    put('logoMediaId', input.logoMediaId ?? null);
   } else if (key === 'hero') {
     const input = sectionSchemas.hero.parse(body);
     const imageId = input.heroImageId ?? null;
     if (imageId && !licensedHeroDefaults().some((entry) => entry.id === imageId)) fieldError('heroImageId', 'Choose one of the listed photos.');
+    const uploadId = input.heroUploadId ?? null;
+    if (uploadId && (await attachMedia(agencyId, 'HERO', [uploadId])).length) fieldError('heroUploadId', 'Upload the photo again.');
     put('heading', input.heading);
     put('ctaLabel', input.ctaLabel);
     put('subtitle', input.subtitle);
-    put('heroImage', imageId ? { kind: 'PLATFORM_DEFAULT', assetId: imageId } : null);
+    put('heroImage', uploadId ? { kind: 'UPLOAD', mediaId: uploadId } : imageId ? { kind: 'PLATFORM_DEFAULT', assetId: imageId } : null);
   } else if (key === 'contact') {
     const input = sectionSchemas.contact.parse(body);
     put('heading', input.heading);
@@ -151,7 +157,7 @@ router.put('/owner/website/sections/:section', asyncRoute(async (request, respon
   const draft = await ensureDraft(agency);
   const key = section as Section;
   const path = `sections.${key}`;
-  const { set, unset } = sectionUpdate(key, request.body, draft, path);
+  const { set, unset } = await sectionUpdate(key, request.body, draft, path, String(agency._id));
   // Phase 3c §3: a shown optional section may not be emptied; the visibility check is part of the same atomic write.
   const conditions: Record<string, unknown>[] = [{ agencyId: agency._id }, versionFilter(`${path}.version`, Number(request.body?.expectedVersion))];
   if (isOptional(key) && !hasMinimumContent({ sections: { [key]: contentOf(set, path) } }, key)) {

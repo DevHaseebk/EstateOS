@@ -33,7 +33,7 @@ export type Card = { title: string; text?: string; icon: SiteIcon };
 export type TeamMember = { name: string; role?: string; phone?: string; whatsapp?: string };
 /** One shown optional section, already filtered to visible + minimum content, in layout order. */
 export type OptionalBlock =
-  | { key: 'properties'; heading: string; items: PublicProperty[] }
+  | { key: 'properties'; heading: string; items: (PublicProperty & { coverUrl?: string; coverSrcSet?: string })[] }
   | { key: 'about'; heading: string; story: string }
   | { key: 'services' | 'whyChooseUs'; heading: string; cards: Card[] }
   | { key: 'team'; heading: string; members: TeamMember[] };
@@ -42,8 +42,8 @@ export type OptionalBlock =
 export type SiteModel = {
   theme: ThemePreset;
   agencyName: string;
-  header: { contactButtonLabel: string; preferredContact: 'WHATSAPP' | 'PHONE' | null };
-  hero: { heading: string; subtitle?: string; ctaLabel: string; imageUrl?: string };
+  header: { contactButtonLabel: string; preferredContact: 'WHATSAPP' | 'PHONE' | null; logoUrl?: string };
+  hero: { heading: string; subtitle?: string; ctaLabel: string; imageUrl?: string; imageSrcSet?: string };
   contact: { heading: string; message?: string };
   optional: OptionalBlock[];
   contacts: { phone?: string; whatsapp?: string; publicEmail?: string; officeAddress?: string; city?: string };

@@ -37,3 +37,6 @@ export function websiteStatus(website: WebsiteData, reviewStatus: string): { lab
     ? { label: 'Going live', hint: 'Your website is ready and is going live now. Refresh in a moment.' }
     : { label: 'Not live yet', hint: 'Ready. It goes live automatically after your agency is approved.' };
 }
+
+/** Phase 3d: the owner's own images (staged or attached) through the Agency Admin BFF. */
+export const ownerMediaUrl = (mediaId: string, width: 480 | 960 | 1600) => `/api/v1/owner/media/${mediaId}/${width}`;

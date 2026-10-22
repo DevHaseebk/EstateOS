@@ -1,11 +1,13 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { formatPrice, INTENT_LABELS, PROPERTY_TYPE_LABELS, SiteIconGlyph } from 'site-template';
 import { OwnerPage } from '../components/OwnerPage';
 import { apiGet } from '../lib/api';
 import { AVAILABILITY_LABELS, type OwnerProperty } from '../lib/properties';
+import { ownerMediaUrl } from '../lib/website';
 
 type List = { items: OwnerProperty[]; counts: { active: number; archived: number } };
 
@@ -34,7 +36,9 @@ function PropertyList() {
       : 'No properties yet. Your website works without them; add one whenever you are ready.'}</p>}
     {list && list.items.length > 0 && <ul className="property-cards">
       {list.items.map((property) => <li key={property.id} className="property-card">
-        <div className="property-visual" aria-hidden="true"><SiteIconGlyph icon={property.type === 'PLOT' ? 'map-pin' : property.type === 'SHOP' || property.type === 'OFFICE' ? 'building' : 'home'} /></div>
+        {property.coverMediaId
+          ? <Image className="property-cover" src={ownerMediaUrl(property.coverMediaId, 480)} alt="" width={480} height={270} unoptimized />
+          : <div className="property-visual" aria-hidden="true"><SiteIconGlyph icon={property.type === 'PLOT' ? 'map-pin' : property.type === 'SHOP' || property.type === 'OFFICE' ? 'building' : 'home'} /></div>}
         <div className="property-card-body">
           <p className="property-meta"><span className={`status-pill availability-${property.availability.toLowerCase()}`}>{AVAILABILITY_LABELS[property.availability]}</span>
             {INTENT_LABELS[property.intent]} · {PROPERTY_TYPE_LABELS[property.type]}</p>
