@@ -2,7 +2,7 @@
 
 ## Current task
 - Contract: `docs/PHASE-6B-PILOT-FIXES-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 5 confirmations. Source: a Codex review of Phases 0–6a, checked by Claude against the code.
-- Git: branch `master`, HEAD `3029982` (pushed). **All Phase 6b work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Git: branch `master`. Phase 6b committed as `153aeb8` and pushed to `origin/master` on the owner's instruction.
 - Decisions: D-047, D-053, D-078, D-083, D-090, D-098, D-102, D-105, D-110, D-115, D-118.
 
 ## Work completed

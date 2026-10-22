@@ -110,7 +110,7 @@ The Phase 6a contract is **APPROVED** (2026-10-22) and **implemented and verifie
 
 ## Phase 6b status (2026-10-22)
 
-A Codex review of Phases 0–6a was checked against the code. The resulting Phase 6b pilot-fixes contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-6B-PILOT-FIXES-CONTRACT-APPROVED.md`.
+A Codex review of Phases 0–6a was checked against the code. The resulting Phase 6b pilot-fixes contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude**, committed `153aeb8` and pushed: `docs/PHASE-6B-PILOT-FIXES-CONTRACT-APPROVED.md`.
 
 - Fixed: public images `public, max-age=300` (was one year immutable); revisions hold only the shown properties (newest `displayCount`, none while hidden) and only their photos are public; 30 failed sign-ins per account per 15 minutes across IPs; the upload error names all five purposes; truthful Overview action, review cards, editor intro, Approve/Restore dialogs and invited-owner status; editor sections grouped into Essentials and Optional sections.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 142/142; the HTTPS check on the 3d synthetic agency passed (cache header; a hidden Properties section makes its photo 404 after Publish).
