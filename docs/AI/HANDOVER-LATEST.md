@@ -1,3 +1,41 @@
+# EstateOS — Phase 6a admin-created agency and owner invitation: implemented and verified by Claude (2026-10-22)
+
+## Current task
+- Contract: `docs/PHASE-6A-ADMIN-CREATED-AGENCY-INVITATION-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 6 confirmations.
+- Git: branch `master`, HEAD `3ecd17a` (pushed). **All Phase 6a work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-028, D-072, D-088, D-089, D-092, D-097, D-098, D-111, D-113, D-115, D-116, D-118.
+
+## Work completed
+- **Backend**
+  - `models.ts`: `Agency.origin` (SELF_SIGNUP default, ADMIN_CREATED; immutable); `User.accountState` ACTIVE/INVITED (`passwordHash` required only when not INVITED); hidden `inviteTokenDigest` and `inviteExpiresAt` (sparse index); `AgencyAudit` axis `ACCOUNT` with `AGENCY_CREATED_BY_ADMIN` (no "from" state), `INVITATION_ISSUED` and `INVITATION_CLAIMED`.
+  - `invitation-routes.ts` (new):
+    - `POST /super-admin/agencies`: the five lean fields, one transaction (agency, invited owner, two audit entries); `201` with `invitation.url` and `expiresAt` once; `409 EMAIL_EXISTS`;
+    - `POST /super-admin/agencies/:id/invitations`: replaces the digest (old link dead); `409 ALREADY_CLAIMED` or `AGENCY_DEACTIVATED`;
+    - both are rate limited to 30 per hour per Super Admin;
+    - `POST /auth/invitations/preview` and `/claim` (owner portal, pre-auth CSRF): one generic `400 INVALID_INVITATION`; rate limits of 20 per hour per IP and 5 per 15 minutes per code; the password is checked against the email, name and agency name; the claim activates the account and removes the invite fields in one transaction.
+  - `auth.ts`: the reset redeem requires `accountState: 'ACTIVE'`; `clientIp` exported. `cli/issue-reset.ts` refuses an INVITED account.
+  - `review-routes.ts`: the directory adds `origin` and `ownerAccountState`; the detail adds `origin`, `owner.accountState` and `owner.invitationExpiresAt` (never the URL); history sorted `at`, then `_id`.
+- **BFF**: the Super Admin facade allows `POST /super-admin/agencies` and `.../invitations`; the owner facade allows `/auth/invitations/preview` and `/claim`.
+- **Super Admin**: **Create agency** button and `/agencies/new` form (per-field errors); `InvitationLink` panel (Copy link, expiry, "shown only once"); the agency page shows "Created by EstateOS", the owner account state and an **Owner invitation** panel with **Issue a new link**; the history labels the ACCOUNT axis.
+- **Agency Admin**: `/invite` reads the code from the fragment and clears it from the address bar, shows the agency and email, and asks for the password twice; then "Your account is ready".
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (5 workspaces) → exit 0.
+- `npm test -w backend` → **137/137** (new `test/invitations.test.ts`, 7 tests; `bff.test.ts` +1).
+- HTTPS end-to-end check with a **new synthetic agency** (`6ad9ac797ad70c61ed49049f`, owner credentials in the gitignored `backend/.env.e2e-6a-dev.local`):
+  - create 201; the link is `https://admin.estateos.localhost/invite#<43-character code>`; duplicate email → EMAIL_EXISTS;
+  - the Super Admin detail shows ADMIN_CREATED, PENDING and INVITED, never the link; the invited owner's sign-in → 401;
+  - `/invite` and `/agencies/new` pages 200; preview shows the agency; claim 204, reuse → INVALID_INVITATION;
+  - owner sign-in 200 (Pending); a new link after the claim → ALREADY_CLAIMED; Approve 200; history shows the account entries, then the approval.
+- Not verified: a visual click-through in a browser.
+
+## Handoff
+- Email/SMS delivery of invitations is out of scope (no provider account); the Super Admin sends the link personally.
+- Next: a deploy/staging phase (needs the owner's accounts and decisions) or D-117 privacy notice and requests (needs the owner's privacy text and legal review).
+- Preserve: invitation codes are never stored or logged in plain form; the link is returned only once; an INVITED account cannot sign in or be reset.
+
+---
+
 # EstateOS — Phase 3e About and Team photos: implemented and verified by Claude (2026-10-22)
 
 ## Current task

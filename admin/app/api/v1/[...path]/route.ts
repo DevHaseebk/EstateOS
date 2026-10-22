@@ -15,7 +15,7 @@ async function handle(request: NextRequest, context: { params: Promise<{ path: s
     (request.method === 'PUT' && (['/api/v1/owner/profile', '/api/v1/owner/website/theme', '/api/v1/owner/website/layout'].includes(route) ||
       /^\/api\/v1\/owner\/website\/sections\/(header|hero|contact|about|services|whyChooseUs|team|properties)$/.test(route) ||
       /^\/api\/v1\/owner\/properties\/[a-f0-9]{24}$/i.test(route))) ||
-    (request.method === 'POST' && (['/api/v1/owner/registrations', '/api/v1/owner/sessions', '/api/v1/auth/recovery/complete', '/api/v1/owner/review-resubmissions', '/api/v1/owner/website/publish', '/api/v1/owner/properties'].includes(route) ||
+    (request.method === 'POST' && (['/api/v1/owner/registrations', '/api/v1/owner/sessions', '/api/v1/auth/recovery/complete', '/api/v1/auth/invitations/preview', '/api/v1/auth/invitations/claim', '/api/v1/owner/review-resubmissions', '/api/v1/owner/website/publish', '/api/v1/owner/properties'].includes(route) ||
       /^\/api\/v1\/owner\/properties\/[a-f0-9]{24}\/(archive|restore)$/i.test(route))) ||
     (request.method === 'DELETE' && route === '/api/v1/owner/session');
   if (!allowed) return NextResponse.json({ error: { code: 'NOT_FOUND', message: 'Not found' } }, { status: 404 });

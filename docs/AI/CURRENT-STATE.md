@@ -100,6 +100,14 @@ The Phase 3e contract is **APPROVED** (2026-10-22) and **implemented and verifie
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 129/129; the HTTPS end-to-end check on the 3d synthetic agency passed.
 - Readiness is unchanged (D-033); without photos the sections render as in 3c.
 
+## Phase 6a status (2026-10-22)
+
+The Phase 6a contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-6A-ADMIN-CREATED-AGENCY-INVITATION-CONTRACT-APPROVED.md`.
+
+- Built: Super Admin **Create agency** (Pending, `origin` ADMIN_CREATED, owner `INVITED` with no password); a single-use 72-hour invitation link (code in the `#fragment`, only its digest stored), shown once; **Issue a new link** cancels the old one; the owner `/invite` page (preview, choose a password, then normal sign-in); everything audited on a new `ACCOUNT` audit axis.
+- Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 137/137; the HTTPS end-to-end check (create → claim → sign in → approve) passed.
+- An invited account can neither sign in nor use a support reset code (the reset CLI and redeem route now require an ACTIVE account).
+
 ## Next gate (written before Phase 1; kept for history)
 
 Review actual repo/active Git diff; reconcile AI setup; document Phase 1 exact server session/CSRF/dev host, agency/user/session bootstrap/recovery, tenant-scoping and versioned auth API contracts with tests. Obtain explicit owner approval **before auth/tenant business code**. Suggested prompt: `docs/AI/PHASE-1-AUTH-TENANT-CODEX-PROMPT.md`.

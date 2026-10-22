@@ -119,3 +119,16 @@ textarea:focus-visible, a:focus-visible { outline: 3px solid #14866d; outline-of
   .directory-filters { grid-template-columns: 1fr; }
   .admin-nav { order: 3; width: 100%; margin-right: 0; }
 }
+
+/* Phase 6a: Create agency and the one-time owner invitation link */
+.page-title-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+a.primary-inline { display: inline-flex; align-items: center; text-decoration: none; }
+.stack-form { max-width: 520px; }
+.stack-form .field { display: grid; }
+.stack-form .field .form-error { margin-top: .4rem; padding: .45rem .75rem; }
+.stack-form button[type="submit"] { justify-self: start; margin-top: 1.25rem; }
+.invitation-box { display: grid; gap: .4rem; margin: 1rem 0; padding: 1rem; background: #e8f2ed; border-radius: 12px; }
+.invitation-box label { margin: 0; }
+.invitation-row { display: flex; gap: .5rem; }
+.invitation-row input { min-width: 0; font-family: ui-monospace, Consolas, monospace; font-size: .9rem; }
+@media (max-width: 560px) { .invitation-row { flex-direction: column; } }

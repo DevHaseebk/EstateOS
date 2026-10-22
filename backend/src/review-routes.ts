@@ -88,7 +88,7 @@ router.get('/super-admin/agencies', asyncRoute(async (request, response) => {
   }
   const found = await Agency.find(conditions.length ? { $and: conditions } : {}).sort({ createdAt: -1, _id: -1 }).limit(limit + 1).lean();
   const page = found.slice(0, limit);
-  const owners = await User.find({ role: 'AGENCY_OWNER', agencyId: { $in: page.map((agency) => agency._id) } }).select('agencyId name emailNormalized').lean();
+  const owners = await User.find({ role: 'AGENCY_OWNER', agencyId: { $in: page.map((agency) => agency._id) } }).select('agencyId name emailNormalized accountState').lean();
   const ownerByAgency = new Map(owners.map((owner) => [String(owner.agencyId), owner]));
   const drafts = await WebsiteDraft.find({ agencyId: { $in: page.map((agency) => agency._id) } }).lean();
   const draftByAgency = new Map(drafts.map((draft) => [String(draft.agencyId), draft]));
@@ -99,6 +99,7 @@ router.get('/super-admin/agencies', asyncRoute(async (request, response) => {
       const owner = ownerByAgency.get(String(agency._id));
       return {
         id: String(agency._id), agencyName: agency.name, ownerName: owner?.name ?? null, ownerEmail: owner?.emailNormalized ?? null,
+        origin: agency.origin ?? 'SELF_SIGNUP', ownerAccountState: owner?.accountState ?? 'ACTIVE',
         createdAt: agency.createdAt, reviewStatus: agency.reviewStatus, restrictionStatus: agency.restrictionStatus ?? 'NONE',
         websiteReadiness: getReadinessIssues(draftByAgency.get(String(agency._id)) ?? virtualDraft(agency), licensedIds).length ? 'NOT_READY' : 'READY',
         publicationStatus: agency.publicationStatus ?? 'NEVER_PUBLISHED',
@@ -114,14 +115,19 @@ router.get('/super-admin/agencies/:agencyId', asyncRoute(async (request, respons
   const agencyId = agencyIdParam(request.params.agencyId);
   const agency = await Agency.findById(agencyId).lean();
   if (!agency) throw new HttpError(404, 'NOT_FOUND', 'Agency not found');
-  const owner = await User.findOne({ role: 'AGENCY_OWNER', agencyId: agency._id }).select('name emailNormalized').lean();
-  const history = await AgencyAudit.find({ agencyId: agency._id }).sort({ at: -1 }).limit(50).lean();
+  const owner = await User.findOne({ role: 'AGENCY_OWNER', agencyId: agency._id }).select('name emailNormalized accountState +inviteExpiresAt').lean();
+  const history = await AgencyAudit.find({ agencyId: agency._id }).sort({ at: -1, _id: -1 }).limit(50).lean();
   const draft = await WebsiteDraft.findOne({ agencyId: agency._id }).lean();
   const readinessIssues = getReadinessIssues(draft ?? virtualDraft(agency));
   response.json({ data: {
     id: String(agency._id),
     agencyName: agency.name,
-    owner: { name: owner?.name ?? null, email: owner?.emailNormalized ?? null, mobile: agency.mobileE164, whatsapp: agency.whatsappE164 },
+    owner: {
+      name: owner?.name ?? null, email: owner?.emailNormalized ?? null, mobile: agency.mobileE164, whatsapp: agency.whatsappE164,
+      // Phase 6a: the invitation URL itself is never returned again.
+      accountState: owner?.accountState ?? 'ACTIVE', ...(owner?.accountState === 'INVITED' ? { invitationExpiresAt: owner.inviteExpiresAt ?? null } : {}),
+    },
+    origin: agency.origin ?? 'SELF_SIGNUP',
     createdAt: agency.createdAt,
     profile: profileDetails(agency),
     publicContact: publicContactView(agency),

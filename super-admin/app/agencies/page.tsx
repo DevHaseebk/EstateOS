@@ -7,7 +7,7 @@ import { AdminHeader } from '../components/AdminHeader';
 import { ApiError, apiGet, formatDate, RESTRICTION_LABELS, REVIEW_LABELS, websiteLabel } from '../lib/api';
 
 type DirectoryItem = {
-  id: string; agencyName: string; ownerName: string | null; ownerEmail: string | null; createdAt: string;
+  id: string; agencyName: string; ownerName: string | null; ownerEmail: string | null; createdAt: string; origin?: string; ownerAccountState?: string;
   reviewStatus: string; restrictionStatus: string; websiteReadiness: string; publicationStatus?: string; publicUrl?: string;
 };
 type Directory = { items: DirectoryItem[]; nextCursor: string | null };
@@ -73,7 +73,10 @@ function AgencyDirectory() {
   return <>
     {session && <AdminHeader name={session.user.name} onSignedOut={() => setSignedOut(true)} />}
     <main className="admin-page">
-      <h1>All agencies</h1>
+      <div className="page-title-row">
+        <h1>All agencies</h1>
+        <Link href="/agencies/new" className="primary-inline">Create agency</Link>
+      </div>
       <form className="directory-filters" role="search" onSubmit={apply} key={query}>
         <div className="search-field">
           <label htmlFor="q">Search agency name or owner email</label>
@@ -106,9 +109,10 @@ function AgencyDirectory() {
         {items.map((item) => <li key={item.id} className="queue-row directory-row">
           <div>
             <p className="queue-name">{item.agencyName}</p>
-            <p className="queue-meta">{item.ownerName ?? 'Owner unknown'}{item.ownerEmail ? ` · ${item.ownerEmail}` : ''} · Registered {formatDate(item.createdAt)}</p>
+            <p className="queue-meta">{item.ownerName ?? 'Owner unknown'}{item.ownerEmail ? ` · ${item.ownerEmail}` : ''} · {item.origin === 'ADMIN_CREATED' ? 'Created by EstateOS' : 'Registered'} {formatDate(item.createdAt)}</p>
             <div className="badges">
               <span className={`badge small review-${item.reviewStatus.toLowerCase()}`}>Review: {REVIEW_LABELS[item.reviewStatus] ?? item.reviewStatus}</span>
+              {item.ownerAccountState === 'INVITED' && <span className="badge small website-pending">Owner: invitation pending</span>}
               {item.restrictionStatus !== 'NONE' && <span className={`badge small account-${item.restrictionStatus.toLowerCase()}`}>Account: {RESTRICTION_LABELS[item.restrictionStatus]}</span>}
               {(() => { const label = websiteLabel(item.publicationStatus, item.websiteReadiness); return <span className={`badge small ${label.tone}`}>Website: {label.text}</span>; })()}
               {item.publicUrl && <a className="badge small neutral" href={item.publicUrl} target="_blank" rel="noopener noreferrer">Open site<span className="visually-hidden"> of {item.agencyName}</span></a>}

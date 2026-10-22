@@ -299,3 +299,30 @@ test('Phase 3d media: binary uploads forwarded untouched, images passed through,
     assert.equal((await publicImage(new Request('https://x/media/bad/1600'), { params: Promise.resolve({ mediaId: 'bad', width: '1600' }) })).status, 404);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('Phase 6a invitation routes: Super Admin create and re-issue, owner preview and claim, each on its own portal only', async () => {
+  const originalFetch = globalThis.fetch;
+  const forwarded: string[] = [];
+  globalThis.fetch = async (input: string | URL | Request) => { forwarded.push(String(input)); return Response.json({ data: {} }); };
+  const agencyId = 'c'.repeat(24);
+  const ctx = (path: string[]) => ({ params: Promise.resolve({ path }) });
+  const post = (host: string, path: string[]) => new NextRequest(`https://${host}/api/v1/${path.join('/')}`, {
+    method: 'POST', headers: { origin: `https://${host}`, 'content-type': 'application/json' }, body: '{}',
+  });
+  const SUPER = 'control.estateos.localhost';
+  const OWNER = 'admin.estateos.localhost';
+  try {
+    assert.equal((await superAdmin.POST(post(SUPER, ['super-admin', 'agencies']), ctx(['super-admin', 'agencies']))).status, 200);
+    assert.equal((await superAdmin.POST(post(SUPER, ['super-admin', 'agencies', agencyId, 'invitations']), ctx(['super-admin', 'agencies', agencyId, 'invitations']))).status, 200);
+    for (const step of ['preview', 'claim']) {
+      assert.equal((await owner.POST(post(OWNER, ['auth', 'invitations', step]), ctx(['auth', 'invitations', step]))).status, 200, step);
+    }
+    const forwardedCount = forwarded.length;
+    assert.equal((await owner.POST(post(OWNER, ['super-admin', 'agencies']), ctx(['super-admin', 'agencies']))).status, 404);
+    assert.equal((await owner.POST(post(OWNER, ['super-admin', 'agencies', agencyId, 'invitations']), ctx(['super-admin', 'agencies', agencyId, 'invitations']))).status, 404);
+    assert.equal((await superAdmin.POST(post(SUPER, ['auth', 'invitations', 'claim']), ctx(['auth', 'invitations', 'claim']))).status, 404);
+    assert.equal((await superAdmin.GET(new NextRequest(`https://${SUPER}/api/v1/super-admin/agencies/${agencyId}/invitations`), ctx(['super-admin', 'agencies', agencyId, 'invitations']))).status, 404);
+    assert.equal((await owner.GET(new NextRequest(`https://${OWNER}/api/v1/auth/invitations/preview`), ctx(['auth', 'invitations', 'preview']))).status, 404);
+    assert.equal(forwarded.length, forwardedCount);
+  } finally { globalThis.fetch = originalFetch; }
+});

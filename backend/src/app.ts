@@ -2,6 +2,7 @@ import express from 'express';
 import { databaseStatus } from './config/database.js';
 import { apiGuard, authErrorHandler, authRouter } from './auth.js';
 import { reviewRouter } from './review-routes.js';
+import { invitationRouter } from './invitation-routes.js';
 import { profileRouter } from './profile-routes.js';
 import { websiteRouter } from './website-routes.js';
 import { propertyRouter } from './property-routes.js';
@@ -19,5 +20,5 @@ app.get('/api/health', (_request, response) => {
 
 // Phase 4a: the public read API is mounted first, behind its own key; management routes never see public callers.
 app.use('/api/v1/public', publicGuard, publicRouter);
-app.use('/api/v1', apiGuard, authRouter, reviewRouter, profileRouter, websiteRouter, propertyRouter, mediaRouter);
+app.use('/api/v1', apiGuard, authRouter, invitationRouter, reviewRouter, profileRouter, websiteRouter, propertyRouter, mediaRouter);
 app.use(authErrorHandler);

@@ -6,6 +6,8 @@ export const RESTRICTION_STATUSES = ['NONE', 'BLOCKED', 'DEACTIVATED'] as const;
 export const RESTRICTION_ACTIONS = ['BLOCK', 'DEACTIVATE', 'RESTORE'] as const;
 // Phase 4a (D-102, D-119): ACTIVATION_PENDING only after a failed automatic first activation.
 export const PUBLICATION_STATUSES = ['NEVER_PUBLISHED', 'ACTIVATION_PENDING', 'LIVE'] as const;
+// Phase 6a (D-118): an admin-created owner is INVITED (no password) until they claim the one-time link.
+export const ACCOUNT_STATES = ['ACTIVE', 'INVITED'] as const;
 
 // Phase 4a (D-082, D-090, D-119): stable slug, the single authoritative Live pointer, and private activation errors.
 const publicationSchema = new Schema({
@@ -48,6 +50,8 @@ const publicContactSchema = new Schema({
 // D-102: review, restriction and publication are separate axes; readiness is computed later (Phase 3).
 const agencySchema = new Schema({
   name: { type: String, required: true },
+  // Phase 6a (D-028): how the agency entered EstateOS. Existing agencies are self-registered.
+  origin: { type: String, enum: ['SELF_SIGNUP', 'ADMIN_CREATED'], required: true, default: 'SELF_SIGNUP', immutable: true },
   mobileE164: { type: String, required: true },
   whatsappE164: { type: String, required: true },
   reviewStatus: { type: String, enum: REVIEW_STATUSES, default: 'PENDING', required: true },
@@ -78,14 +82,18 @@ const userSchema = new Schema({
   agencyId: { type: Schema.Types.ObjectId, ref: 'Agency' },
   name: { type: String, required: true },
   emailNormalized: { type: String, required: true, unique: true },
-  passwordHash: { type: String, required: true, select: false },
+  passwordHash: { type: String, select: false, required(this: { accountState?: string }) { return this.accountState !== 'INVITED'; } },
   credentialVersion: { type: Number, required: true, default: 0 },
-  accountState: { type: String, enum: ['ACTIVE'], required: true, default: 'ACTIVE' },
+  accountState: { type: String, enum: ACCOUNT_STATES, required: true, default: 'ACTIVE' },
   resetTokenDigest: { type: String, select: false },
   resetExpiresAt: { type: Date, select: false },
+  // Phase 6a: only the digest of the one-time invitation code is stored; both fields are removed on claim.
+  inviteTokenDigest: { type: String, select: false },
+  inviteExpiresAt: { type: Date, select: false },
   bootstrapKey: { type: String, unique: true, sparse: true },
 }, { timestamps: true });
 userSchema.index({ agencyId: 1, role: 1 });
+userSchema.index({ inviteTokenDigest: 1 }, { sparse: true });
 
 const sessionSchema = new Schema({
   tokenDigest: { type: String, required: true, unique: true, select: false },
@@ -124,13 +132,18 @@ const agencyAuditSchema = new Schema({
   // SYSTEM entries (automatic first Live, Phase 4a) have no acting user.
   actorUserId: { type: Schema.Types.ObjectId, ref: 'User', immutable: true, required(this: { actorRole?: string }) { return this.actorRole !== 'SYSTEM'; } },
   actorRole: { type: String, enum: ['SUPER_ADMIN', 'AGENCY_OWNER', 'SYSTEM'], required: true, immutable: true },
-  axis: { type: String, enum: ['REVIEW', 'RESTRICTION', 'PUBLICATION'], required: true, default: 'REVIEW', immutable: true },
+  axis: { type: String, enum: ['REVIEW', 'RESTRICTION', 'PUBLICATION', 'ACCOUNT'], required: true, default: 'REVIEW', immutable: true },
   action: {
     type: String, required: true, immutable: true,
-    enum: ['REVIEW_APPROVE', 'REVIEW_REQUEST_CHANGES', 'REVIEW_REJECT', 'REVIEW_REOPEN', 'OWNER_RESUBMIT', 'RESTRICT_BLOCK', 'RESTRICT_DEACTIVATE', 'RESTRICT_RESTORE', 'WEBSITE_FIRST_LIVE', 'WEBSITE_PUBLISH_UPDATES'],
+    enum: ['REVIEW_APPROVE', 'REVIEW_REQUEST_CHANGES', 'REVIEW_REJECT', 'REVIEW_REOPEN', 'OWNER_RESUBMIT', 'RESTRICT_BLOCK', 'RESTRICT_DEACTIVATE', 'RESTRICT_RESTORE', 'WEBSITE_FIRST_LIVE', 'WEBSITE_PUBLISH_UPDATES',
+      'AGENCY_CREATED_BY_ADMIN', 'INVITATION_ISSUED', 'INVITATION_CLAIMED'],
   },
-  fromStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES, ...PUBLICATION_STATUSES], required: true, immutable: true },
-  toStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES, ...PUBLICATION_STATUSES], required: true, immutable: true },
+  // Phase 6a: creating an agency has no "from" state.
+  fromStatus: {
+    type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES, ...PUBLICATION_STATUSES, ...ACCOUNT_STATES], immutable: true,
+    required(this: { action?: string }) { return this.action !== 'AGENCY_CREATED_BY_ADMIN'; },
+  },
+  toStatus: { type: String, enum: [...REVIEW_STATUSES, ...RESTRICTION_STATUSES, ...PUBLICATION_STATUSES, ...ACCOUNT_STATES], required: true, immutable: true },
   reason: { type: String, immutable: true },
   requestId: { type: String, immutable: true },
 }, { versionKey: false });

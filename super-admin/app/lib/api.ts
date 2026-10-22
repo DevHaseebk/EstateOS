@@ -1,14 +1,14 @@
 // Browser helpers for the same-origin Super Admin BFF (/api/v1). Session cookies are HttpOnly; CSRF token per mutation.
 
 export class ApiError extends Error {
-  constructor(public status: number, public code: string, message: string) { super(message); }
+  constructor(public status: number, public code: string, message: string, public details: Record<string, string> = {}) { super(message); }
 }
 
 type ErrorPayload = { error?: { code?: string; message?: string; details?: Record<string, string> } } | null;
 
 function toError(status: number, payload: ErrorPayload): ApiError {
   const details = payload?.error?.details ? Object.values(payload.error.details).join(' ') : '';
-  return new ApiError(status, payload?.error?.code ?? 'REQUEST_FAILED', details || payload?.error?.message || 'Request failed');
+  return new ApiError(status, payload?.error?.code ?? 'REQUEST_FAILED', details || payload?.error?.message || 'Request failed', payload?.error?.details ?? {});
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
@@ -50,6 +50,9 @@ export const ACTION_LABELS: Record<string, string> = {
   RESTRICT_RESTORE: 'Restored',
   WEBSITE_FIRST_LIVE: 'Website went Live automatically',
   WEBSITE_PUBLISH_UPDATES: 'Owner published website updates',
+  AGENCY_CREATED_BY_ADMIN: 'Agency created by EstateOS',
+  INVITATION_ISSUED: 'Owner invitation link issued',
+  INVITATION_CLAIMED: 'Owner activated the account',
 };
 
 export const RESTRICTION_LABELS: Record<string, string> = {
@@ -64,9 +67,15 @@ export const PUBLICATION_LABELS: Record<string, string> = {
   LIVE: 'Live',
 };
 
-/** Label for a value on either state axis (used by the history list). */
+// Phase 6a: the owner's account for an agency created by EstateOS.
+export const OWNER_ACCOUNT_LABELS: Record<string, string> = {
+  INVITED: 'Invitation pending',
+  ACTIVE: 'Owner active',
+};
+
+/** Label for a value on any state axis (used by the history list). */
 export function statusLabel(value: string): string {
-  return REVIEW_LABELS[value] ?? RESTRICTION_LABELS[value] ?? PUBLICATION_LABELS[value] ?? value;
+  return REVIEW_LABELS[value] ?? RESTRICTION_LABELS[value] ?? PUBLICATION_LABELS[value] ?? OWNER_ACCOUNT_LABELS[value] ?? value;
 }
 
 export function formatDate(value: string | null | undefined): string {

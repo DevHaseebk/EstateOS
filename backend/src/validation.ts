@@ -18,6 +18,11 @@ export const signupSchema = z.strictObject({
   ownerName: name(100), agencyName: name(120), mobile: phone, whatsapp: phone,
   email, password: z.string().min(12).max(128),
 }).refine((input) => validatePassword(input.password, [input.email, input.ownerName, input.agencyName]), { message: 'Choose a stronger password', path: ['password'] });
+// Phase 6a (D-028/D-118): the lean signup fields without a password; the owner chooses it when claiming the invitation.
+export const adminAgencySchema = z.strictObject({ ownerName: name(100), agencyName: name(120), mobile: phone, whatsapp: phone, email });
+const invitationCode = z.string().min(32).max(128);
+export const invitationPreviewSchema = z.strictObject({ invitationCode });
+export const invitationClaimSchema = z.strictObject({ invitationCode, newPassword: z.string().min(12).max(128) });
 export const loginSchema = z.strictObject({ email, password: z.string().min(1).max(1024) });
 export const resetSchema = z.strictObject({ resetCode: z.string().min(32).max(128), newPassword: z.string().min(12).max(128) })
   .refine((input) => validatePassword(input.newPassword), { message: 'Choose a stronger password', path: ['newPassword'] });

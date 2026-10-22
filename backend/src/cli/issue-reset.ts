@@ -15,6 +15,7 @@ async function main(): Promise<void> {
   try {
     const user = await User.findOne({ emailNormalized: email });
     if (!user) throw new Error('Target account not found');
+    if (user.accountState !== 'ACTIVE') throw new Error('Target account has not claimed its invitation; issue a new invitation link instead');
     if (user.role === 'SUPER_ADMIN' && (!secondApprover || secondApprover === operator)) {
       throw new Error('Super Admin recovery requires a distinct second approver');
     }

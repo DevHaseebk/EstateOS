@@ -5,13 +5,15 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { AdminHeader } from '../../components/AdminHeader';
 import { AgencyProperties } from '../../components/AgencyProperties';
+import { InvitationLink, type Invitation } from '../../components/InvitationLink';
 import { DecisionDialog, type DecisionKind } from '../../components/DecisionDialog';
-import { ACTION_LABELS, ApiError, apiGet, apiMutation, formatDate, RESTRICTION_LABELS, REVIEW_LABELS, statusLabel, websiteLabel } from '../../lib/api';
+import { ACTION_LABELS, ApiError, apiGet, apiMutation, formatDate, OWNER_ACCOUNT_LABELS, RESTRICTION_LABELS, REVIEW_LABELS, statusLabel, websiteLabel } from '../../lib/api';
 
 type Detail = {
   id: string;
   agencyName: string;
-  owner: { name: string | null; email: string | null; mobile: string; whatsapp: string };
+  owner: { name: string | null; email: string | null; mobile: string; whatsapp: string; accountState: string; invitationExpiresAt?: string | null };
+  origin: string;
   createdAt: string;
   profile: { description?: string; officeAddress?: string; city?: string; serviceAreas?: string; publicEmail?: string };
   publicContact: { showMobile: boolean; showWhatsapp: boolean };
@@ -25,7 +27,7 @@ type Detail = {
     status: string; url?: string; firstLiveAt?: string; lastActivationError?: { code: string; at: string }; activationAttempts: number;
     liveRevision?: number; publishedAt?: string; unpublishedChanges?: boolean;
   };
-  history: { at: string; axis: string; action: string; actorRole: string; fromStatus: string; toStatus: string; reason?: string }[];
+  history: { at: string; axis: string; action: string; actorRole: string; fromStatus?: string; toStatus: string; reason?: string }[];
 };
 type Session = { user: { name: string } };
 
@@ -48,6 +50,9 @@ export default function AgencyReviewPage() {
   const [state, setState] = useState<'loading' | 'ready' | 'signed-out' | 'not-found' | 'error'>('loading');
   const [dialog, setDialog] = useState<DecisionKind | null>(null);
   const [notice, setNotice] = useState('');
+  const [invitation, setInvitation] = useState<Invitation | null>(null);
+  const [inviteError, setInviteError] = useState('');
+  const [issuing, setIssuing] = useState(false);
 
   const load = useCallback(() =>
     Promise.all([apiGet<Session>('/api/v1/super-admin/session'), apiGet<Detail>(`/api/v1/super-admin/agencies/${agencyId}`)])
@@ -82,6 +87,19 @@ export default function AgencyReviewPage() {
     }
   }
 
+  // Phase 6a §4: a new link cancels the previous one; the URL is only ever shown in this response.
+  async function issueLink() {
+    if (!detail) return;
+    setIssuing(true); setInviteError('');
+    try {
+      const data = await apiMutation<{ invitation: Invitation }>(`/api/v1/super-admin/agencies/${detail.id}/invitations`, 'POST', {});
+      setInvitation(data!.invitation);
+      await load();
+    } catch (failure) {
+      setInviteError(failure instanceof Error ? failure.message : 'Could not issue a new link');
+    } finally { setIssuing(false); }
+  }
+
   if (state === 'loading') return <main className="admin-page"><p role="status">Loading agency…</p></main>;
   if (state === 'signed-out') return <main className="admin-page"><p>Your session has ended. <Link href="/">Sign in again</Link>.</p></main>;
   if (state === 'not-found') return <main className="admin-page"><p>Agency not found. <Link href="/">Back to the review queue</Link>.</p></main>;
@@ -105,7 +123,10 @@ export default function AgencyReviewPage() {
             <div><dt>Email</dt><dd>{detail.owner.email ?? '—'}</dd></div>
             <div><dt>Mobile</dt><dd>{detail.owner.mobile}</dd></div>
             <div><dt>WhatsApp</dt><dd>{detail.owner.whatsapp}</dd></div>
-            <div><dt>Registered</dt><dd>{formatDate(detail.createdAt)}</dd></div>
+            <div><dt>{detail.origin === 'ADMIN_CREATED' ? 'Created by EstateOS' : 'Registered'}</dt><dd>{formatDate(detail.createdAt)}</dd></div>
+            <div><dt>Owner account</dt><dd>{detail.owner.accountState === 'INVITED'
+              ? (detail.owner.invitationExpiresAt && new Date(detail.owner.invitationExpiresAt) > new Date() ? `Invitation sent, expires ${formatDate(detail.owner.invitationExpiresAt)}` : 'Invitation expired')
+              : OWNER_ACCOUNT_LABELS.ACTIVE}</dd></div>
             <div><dt>In queue since</dt><dd>{formatDate(detail.review.submittedForReviewAt)}</dd></div>
             <div><dt>Shown on website</dt><dd>{[detail.publicContact.showMobile && 'Mobile', detail.publicContact.showWhatsapp && 'WhatsApp'].filter(Boolean).join(', ') || 'None chosen yet'}</dd></div>
             <div><dt>City</dt><dd>{detail.profile.city ?? '—'}</dd></div>
@@ -152,6 +173,16 @@ export default function AgencyReviewPage() {
           </>}
         </section>
 
+        {detail.owner.accountState === 'INVITED' && <section className="panel" aria-labelledby="invite-title">
+          <h2 id="invite-title">Owner invitation</h2>
+          <p>The owner has not set a password yet. Issuing a new link cancels the previous one.</p>
+          {invitation && <InvitationLink invitation={invitation} />}
+          {inviteError && <p className="form-error" role="alert">{inviteError}</p>}
+          {restriction.status === 'DEACTIVATED'
+            ? <p>Restore the agency before sending a new invitation.</p>
+            : <button type="button" className="secondary" disabled={issuing} onClick={() => void issueLink()}>{issuing ? 'Issuing…' : 'Issue a new link'}</button>}
+        </section>}
+
         <section className="panel account-panel" aria-labelledby="account-title">
           <h2 id="account-title">Account status</h2>
           {!restricted ? <>
@@ -180,7 +211,7 @@ export default function AgencyReviewPage() {
         {detail.history.length === 0 ? <p>No review actions yet.</p> : <ol className="history">
           {detail.history.map((entry, index) => <li key={`${entry.at}-${index}`}>
             <p><strong>{ACTION_LABELS[entry.action] ?? entry.action}</strong> · {formatDate(entry.at)} · by {entry.actorRole === 'SUPER_ADMIN' ? 'Super Admin' : entry.actorRole === 'SYSTEM' ? 'EstateOS (automatic)' : 'Agency owner'}</p>
-            <p className="queue-meta">{entry.axis === 'RESTRICTION' ? 'Account: ' : entry.axis === 'PUBLICATION' ? 'Website: ' : ''}{statusLabel(entry.fromStatus)} → {statusLabel(entry.toStatus)}</p>
+            <p className="queue-meta">{entry.axis === 'RESTRICTION' ? 'Account: ' : entry.axis === 'PUBLICATION' ? 'Website: ' : entry.axis === 'ACCOUNT' ? 'Owner: ' : ''}{entry.fromStatus ? `${statusLabel(entry.fromStatus)} → ` : ''}{statusLabel(entry.toStatus)}</p>
             {entry.reason && <p className="history-reason">{entry.reason}</p>}
           </li>)}
         </ol>}

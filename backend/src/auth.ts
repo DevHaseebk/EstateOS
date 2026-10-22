@@ -41,7 +41,7 @@ function validateOrigin(request: AuthRequest): void {
   if (request.header('origin') !== expected) problem(403, 'ORIGIN_REJECTED', 'Origin is not allowed');
   if (request.header('sec-fetch-site') === 'cross-site') problem(403, 'ORIGIN_REJECTED', 'Cross-site request rejected');
 }
-function clientIp(request: Request): string {
+export function clientIp(request: Request): string {
   return request.header('x-client-ip') ?? 'unknown';
 }
 export async function countAttempt(kind: string, value: string, durationMs: number): Promise<number> {
@@ -269,7 +269,8 @@ router.post('/auth/recovery/complete', asyncRoute(async (request, response) => {
   const portal = portalFor(request);
   let succeeded = false;
   await mongoose.connection.transaction(async (transaction) => {
-    const user = await User.findOne({ resetTokenDigest: tokenDigest, resetExpiresAt: { $gt: new Date() }, role: portal === 'OWNER' ? 'AGENCY_OWNER' : 'SUPER_ADMIN' })
+    // Phase 6a: an INVITED account claims its invitation instead; a reset code never applies to it.
+    const user = await User.findOne({ resetTokenDigest: tokenDigest, resetExpiresAt: { $gt: new Date() }, accountState: 'ACTIVE', role: portal === 'OWNER' ? 'AGENCY_OWNER' : 'SUPER_ADMIN' })
       .select('+resetTokenDigest +resetExpiresAt').session(transaction);
     if (!user) return;
     const result = await User.updateOne({ _id: user._id, resetTokenDigest: tokenDigest }, { $set: { passwordHash }, $inc: { credentialVersion: 1 }, $unset: { resetTokenDigest: '', resetExpiresAt: '' } }, { session: transaction });
