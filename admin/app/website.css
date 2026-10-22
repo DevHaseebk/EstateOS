@@ -114,6 +114,10 @@ button.primary-link { border: 0; cursor: pointer; font: inherit; font-weight: 70
 .upload-errors { margin: .5rem 0 0; padding-left: 1.1rem; color: #8a1822; font-size: .92rem; }
 .logo-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-bottom: .5rem; }
 .logo-preview img { max-height: 80px; width: auto; object-fit: contain; background: #f5f7f5; border-radius: 8px; padding: .4rem; }
+/* Phase 3e: About photo and round team photo previews. */
+.logo-preview img.about-photo-preview { max-height: 160px; object-fit: cover; padding: 0; }
+.logo-preview img.member-photo-preview { width: 72px; height: 72px; max-height: none; border-radius: 50%; object-fit: cover; padding: 0; }
+.member-photo { margin-top: .75rem; }
 .photo-option img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 6px; }
 .gallery-rows { list-style: none; margin: .5rem 0; padding: 0; display: grid; gap: .6rem; }
 .gallery-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding: .6rem; border: 1px solid #d5ded8; border-radius: 12px; background: #fafbfa; }

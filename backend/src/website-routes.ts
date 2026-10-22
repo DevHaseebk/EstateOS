@@ -70,6 +70,9 @@ async function sectionUpdate(key: Section, body: unknown, draft: DraftFields, pa
     const input = sectionSchemas.about.parse(body);
     put('heading', input.heading);
     put('story', input.story);
+    // Phase 3e §2: the save attaches the staged About photo; any id that is not this agency's ABOUT media is refused.
+    if (input.photoMediaId && (await attachMedia(agencyId, 'ABOUT', [input.photoMediaId])).length) fieldError('photoMediaId', 'Upload the photo again.');
+    put('photoMediaId', input.photoMediaId ?? null);
   } else if (key === 'services') {
     const input = sectionSchemas.services.parse(body);
     put('heading', input.heading);
@@ -85,7 +88,16 @@ async function sectionUpdate(key: Section, body: unknown, draft: DraftFields, pa
   } else {
     const input = sectionSchemas.team.parse(body);
     put('heading', input.heading);
-    put('members', input.members.map((member) => defined({ ...member, contactConsent: member.phone || member.whatsapp ? true : undefined })));
+    // Phase 3e §2: member photos must be this agency's TEAM media (the consent tick is checked by the schema).
+    const photoIds = input.members.map((member) => member.photoMediaId ?? null);
+    const bad = await attachMedia(agencyId, 'TEAM', photoIds.filter((id): id is string => Boolean(id)));
+    if (bad.length) fieldError(`members.${photoIds.findIndex((id) => id && bad.includes(id))}.photoMediaId`, 'Upload the photo again.');
+    put('members', input.members.map((member) => defined({
+      ...member,
+      contactConsent: member.phone || member.whatsapp ? true : undefined,
+      photoMediaId: member.photoMediaId ?? undefined,
+      photoConsent: member.photoMediaId ? true : undefined,
+    })));
   }
   return { set, unset };
 }

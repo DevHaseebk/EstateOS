@@ -1,7 +1,7 @@
 import { ApiError } from './api';
 
 // Phase 3d: browser upload of one image as the raw request body (no multipart). The server re-checks everything.
-export type MediaPurpose = 'HERO' | 'LOGO' | 'PROPERTY';
+export type MediaPurpose = 'HERO' | 'LOGO' | 'PROPERTY' | 'ABOUT' | 'TEAM';
 const TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const IMAGE_ACCEPT = TYPES.join(',');

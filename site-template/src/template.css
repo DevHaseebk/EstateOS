@@ -80,12 +80,14 @@
 .est-nav a:hover { text-decoration: underline; }
 .est-optional + .est-optional { padding-top: 0; }
 .est-about-story { margin: 1.25rem 0 0; max-width: 70ch; font-size: 1.0625rem; white-space: pre-line; }
+.est-about-photo { display: block; width: 100%; aspect-ratio: 8 / 5; object-fit: cover; margin-top: 1.5rem; border-radius: var(--est-radius-card); }
 .est-card-grid { list-style: none; margin: 2rem 0 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 1rem; }
 .est-feature { display: grid; gap: .5rem; align-content: start; }
 .est-feature p, .est-member p { margin: 0; }
 .est-icon { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: var(--est-radius-button); background: color-mix(in srgb, var(--est-accent) 14%, transparent); color: var(--est-accent); }
 .est-h3 { margin: 0; font-family: var(--est-heading-font); font-weight: var(--est-heading-weight); font-size: 1.25rem; line-height: 1.25; }
 .est-member { display: flex; gap: 1rem; align-items: flex-start; }
+.est-member-photo { flex: none; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--est-surface); }
 .est-initials { flex: none; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--est-accent); color: var(--est-on-accent); font-weight: 600; font-size: 1.1rem; }
 .est-member-contacts { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-top: .4rem !important; }
 .est-member-contacts a { display: inline-flex; align-items: center; min-height: 44px; }
@@ -93,6 +95,7 @@
   .est-nav { display: flex; }
   .est-header-inner { gap: 2rem; }
   .est-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+  .est-about-with-photo { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 2.5rem; align-items: start; }
 }
 @container (min-width: 1024px) {
   .est-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

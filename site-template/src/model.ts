@@ -12,10 +12,10 @@ export type WebsiteData = {
     header: { contactButtonLabel: string; preferredContact: 'WHATSAPP' | 'PHONE' | null; logoMediaId?: string | null; version: number };
     hero: { heading: string; subtitle?: string; ctaLabel: string; heroImageId: string | null; heroUploadId?: string | null; version: number };
     contact: { heading: string; message?: string; version: number };
-    about: { heading: string; story?: string; version: number };
+    about: { heading: string; story?: string; photoMediaId?: string; version: number };
     services: { heading: string; cards: (CardData & { description?: string })[]; version: number };
     whyChooseUs: { heading: string; cards: (CardData & { detail?: string })[]; version: number };
-    team: { heading: string; members: { name: string; role?: string; phone?: string; whatsapp?: string; contactConsent?: boolean }[]; version: number };
+    team: { heading: string; members: { name: string; role?: string; phone?: string; whatsapp?: string; contactConsent?: boolean; photoMediaId?: string; photoConsent?: boolean }[]; version: number };
     /** Phase 5a: public Properties section settings (D-032). */
     properties: { heading: string; displayCount: 3 | 6; version: number };
   };
@@ -59,10 +59,18 @@ function optionalBlocks(website: SiteContent, mediaUrl?: MediaUrl): OptionalBloc
       if (items.length) blocks.push({ key, heading: website.sections.properties?.heading ?? 'Our properties', items });
       continue;
     }
-    if (key === 'about' && about.story) blocks.push({ key, heading: about.heading, story: about.story });
+    if (key === 'about' && about.story) {
+      // Phase 3e: the optional About photo (D-032), alt text names the agency.
+      const photo = about.photoMediaId && mediaUrl
+        ? { url: mediaUrl(about.photoMediaId, 960), srcSet: srcSet(mediaUrl, about.photoMediaId, [480, 960]), alt: `Photo of ${website.mapped.agencyName || 'our agency'}` }
+        : undefined;
+      blocks.push({ key, heading: about.heading, story: about.story, ...(photo ? { photo } : {}) });
+    }
     if (key === 'services' && services.cards.length) blocks.push({ key, heading: services.heading, cards: services.cards.map(({ title, description, icon }) => ({ title, text: description, icon })) });
     if (key === 'whyChooseUs' && whyChooseUs.cards.length) blocks.push({ key, heading: whyChooseUs.heading, cards: whyChooseUs.cards.map(({ title, detail, icon }) => ({ title, text: detail, icon })) });
-    if (key === 'team' && team.members.length) blocks.push({ key, heading: team.heading, members: team.members.map(({ name, role, phone, whatsapp }) => ({ name, role, phone, whatsapp })) });
+    if (key === 'team' && team.members.length) blocks.push({ key, heading: team.heading, members: team.members.map(({ name, role, phone, whatsapp, photoMediaId }) => ({
+      name, role, phone, whatsapp, ...(photoMediaId && mediaUrl ? { photoUrl: mediaUrl(photoMediaId, 480) } : {}),
+    })) });
   }
   return blocks;
 }

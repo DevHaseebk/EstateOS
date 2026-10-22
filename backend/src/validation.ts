@@ -114,6 +114,7 @@ export const sectionSchemas = {
     heading: sectionText(3, 60),
     story: z.string().trim().optional().transform((value) => value ? value : undefined)
       .pipe(z.string().min(20, 'Must be at least 20 characters').max(1200, 'Must be at most 1200 characters').optional()),
+    photoMediaId: mediaId.nullable().optional(), // Phase 3e
     expectedVersion: z.number().int().min(0),
   }),
   services: z.strictObject({
@@ -134,8 +135,13 @@ export const sectionSchemas = {
       phone: optionalPhone,
       whatsapp: optionalPhone,
       contactConsent: z.boolean().optional(),
+      // Phase 3e §1 Q2: a member photo needs the "agreed to show their photo" tick.
+      photoMediaId: mediaId.nullable().optional(),
+      photoConsent: z.boolean().optional(),
     }).refine((member) => (!member.phone && !member.whatsapp) || member.contactConsent === true, {
       message: 'Tick that this person agreed to show this number on the website', path: ['contactConsent'],
+    }).refine((member) => !member.photoMediaId || member.photoConsent === true, {
+      message: 'Tick that this person agreed to show their photo on the website', path: ['photoConsent'],
     })).max(12, 'At most 12 team members'),
     expectedVersion: z.number().int().min(0),
   }),

@@ -177,6 +177,7 @@ const draftReasonCardSchema = new Schema({
 const draftAboutSchema = new Schema({
   heading: { type: String, required: true, default: 'About us' },
   story: { type: String },
+  photoMediaId: { type: String }, // Phase 3e: ABOUT media
   version: { type: Number, required: true, default: 0 },
 }, { _id: false });
 const draftServicesSchema = new Schema({
@@ -195,6 +196,7 @@ const draftTeamSchema = new Schema({
     type: [new Schema({
       name: { type: String, required: true }, role: { type: String }, phone: { type: String }, whatsapp: { type: String },
       contactConsent: { type: Boolean },
+      photoMediaId: { type: String }, photoConsent: { type: Boolean }, // Phase 3e: TEAM media + consent
     }, { _id: false })],
     default: [],
   },
@@ -304,7 +306,7 @@ propertySchema.index({ agencyId: 1, archivedAt: 1, createdAt: -1, _id: -1 });
 const mediaSchema = new Schema({
   mediaId: { type: String, required: true, unique: true, immutable: true },
   agencyId: { type: Schema.Types.ObjectId, ref: 'Agency', required: true, immutable: true },
-  purpose: { type: String, enum: ['HERO', 'LOGO', 'PROPERTY'], required: true, immutable: true },
+  purpose: { type: String, enum: ['HERO', 'LOGO', 'PROPERTY', 'ABOUT', 'TEAM'], required: true, immutable: true },
   status: { type: String, enum: ['STAGED', 'ATTACHED'], required: true, default: 'STAGED' },
   width: { type: Number, required: true },
   height: { type: Number, required: true },

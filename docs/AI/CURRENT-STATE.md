@@ -92,6 +92,14 @@ The Phase 3d contract is **APPROVED** (2026-10-22) and **implemented and verifie
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 123/123; the HTTPS end-to-end check passed with a real uploaded Hero, **with no fixture**.
 - Owner-supplied licensed defaults are now optional: agencies can go Live with their own photo.
 
+## Phase 3e status (2026-10-22)
+
+The Phase 3e contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-3E-ABOUT-TEAM-PHOTOS-CONTRACT-APPROVED.md`.
+
+- Built: media purposes ABOUT (at least 800×500) and TEAM (at least 300×300) on the 3d pipeline; an optional About photo; an optional photo per team member that needs the "agreed to show their photo" tick; photos are public only after Publish and only while their section is shown.
+- Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 129/129; the HTTPS end-to-end check on the 3d synthetic agency passed.
+- Readiness is unchanged (D-033); without photos the sections render as in 3c.
+
 ## Next gate (written before Phase 1; kept for history)
 
 Review actual repo/active Git diff; reconcile AI setup; document Phase 1 exact server session/CSRF/dev host, agency/user/session bootstrap/recovery, tenant-scoping and versioned auth API contracts with tests. Obtain explicit owner approval **before auth/tenant business code**. Suggested prompt: `docs/AI/PHASE-1-AUTH-TENANT-CODEX-PROMPT.md`.

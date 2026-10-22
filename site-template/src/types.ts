@@ -30,11 +30,11 @@ export const OPTIONAL_SECTION_LABELS: Record<OptionalSection, string> = {
 };
 
 export type Card = { title: string; text?: string; icon: SiteIcon };
-export type TeamMember = { name: string; role?: string; phone?: string; whatsapp?: string };
+export type TeamMember = { name: string; role?: string; phone?: string; whatsapp?: string; photoUrl?: string };
 /** One shown optional section, already filtered to visible + minimum content, in layout order. */
 export type OptionalBlock =
   | { key: 'properties'; heading: string; items: (PublicProperty & { coverUrl?: string; coverSrcSet?: string })[] }
-  | { key: 'about'; heading: string; story: string }
+  | { key: 'about'; heading: string; story: string; photo?: { url: string; srcSet: string; alt: string } }
   | { key: 'services' | 'whyChooseUs'; heading: string; cards: Card[] }
   | { key: 'team'; heading: string; members: TeamMember[] };
 

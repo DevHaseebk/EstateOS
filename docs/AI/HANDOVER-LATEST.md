@@ -1,3 +1,37 @@
+# EstateOS — Phase 3e About and Team photos: implemented and verified by Claude (2026-10-22)
+
+## Current task
+- Contract: `docs/PHASE-3E-ABOUT-TEAM-PHOTOS-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 5 confirmations.
+- Git: branch `master`, HEAD `362ac55` (pushed). **All Phase 3e work is UNCOMMITTED.** Commit and push only on the owner's instruction.
+- Decisions: D-032, D-033 (unchanged), D-086, D-089, D-090, D-099/D-117 (consent spirit), D-106, D-110, D-115.
+
+## Work completed
+- **Backend**
+  - `media.ts`: purposes `ABOUT` (at least 800 × 500) and `TEAM` (at least 300 × 300). `models.ts`: the `Media.purpose` enum, About `photoMediaId`, Team member `photoMediaId` and `photoConsent`.
+  - `validation.ts`: About `photoMediaId` (nullable); Team member `photoMediaId` and `photoConsent`, with a rule that a photo needs `photoConsent === true` (422 on `members.N.photoConsent`).
+  - `website-routes.ts`: the About save attaches its ABOUT media; the Team save attaches all member photos as TEAM media in one call (a wrong-purpose or foreign id → 422 on `members.N.photoMediaId`, nothing attached). A consent tick without a photo is not stored.
+  - `website.ts`: section views return the photo fields only when set, so sections without photos read exactly as in 3c.
+  - `publication.ts`: `snapshotMediaIds` adds the About photo and the team photos **only when that section is shown**, so a hidden section's photo stays private.
+- **site-template**: the About photo (`srcset` 480/960, `alt` "Photo of <agency name>") beside the story at 768 px and wider, above it on phones; round 56 px team photos with `alt` = member name; initials stay for members without a photo.
+- **Agency Admin**: About "Upload a photo", preview and Remove photo; per team member "Upload photo", round preview, Remove, and the consent checkbox once a photo is chosen. The "later phase" hints were removed.
+
+## Verification (Node v24.22.1)
+- typecheck, lint and build (5 workspaces) → exit 0.
+- `npm test -w backend` → **129/129** (new `test/about-team-photos.test.ts`, 6 tests: minimum sizes, the consent rule, About attach and remove, Team consent, wrong-purpose and foreign ids, Live visibility (publish, hidden section, block), readiness unchanged, and a server render in the 3 themes with and without photos).
+- HTTPS end-to-end check on the 3d synthetic agency (`6ad99f399be17f0816ead34c`, credentials in the gitignored `backend/.env.e2e-3d-dev.local`):
+  - About and Team uploads 201; Team save without consent → 422 `members.0.photoConsent`; with consent → 200; layout shows About and Team;
+  - both images 404 publicly before publish; Publish (from revision 2) → 200;
+  - the public page has the About photo with its `alt`, the round team photo with the member name, and the initials for the member without a photo; both public images are 200 image/webp;
+  - the admin editor About and Team pages are 200.
+- Not verified: a visual click-through in a browser.
+
+## Handoff
+- At deploy time: the S3-compatible (R2) `MediaStorage` driver plus CDN with the owner's account (D-105, D-114).
+- Next: a deploy/staging phase (needs the owner's accounts and decisions).
+- Preserve: originals are never served; public images only through the current Live revision; uploads are staged until a save attaches them; team photos need consent.
+
+---
+
 # EstateOS — Phase 3d photo uploads: implemented and verified by Claude (2026-10-22)
 
 ## Current task

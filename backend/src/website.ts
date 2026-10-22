@@ -44,7 +44,7 @@ export function mapFromAgency(agency: AgencyFields) {
 }
 
 type CardFields = { title: string; description?: string | null; detail?: string | null; icon: string };
-type MemberFields = { name: string; role?: string | null; phone?: string | null; whatsapp?: string | null; contactConsent?: boolean | null };
+type MemberFields = { name: string; role?: string | null; phone?: string | null; whatsapp?: string | null; contactConsent?: boolean | null; photoMediaId?: string | null; photoConsent?: boolean | null };
 export type OptionalKey = 'about' | 'services' | 'whyChooseUs' | 'team';
 export const OPTIONAL_KEYS: readonly OptionalKey[] = ['about', 'services', 'whyChooseUs', 'team'];
 const DEFAULT_ORDER = ['about', 'services', 'properties', 'whyChooseUs', 'team'];
@@ -56,7 +56,7 @@ export type DraftFields = {
     header?: { contactButtonLabel?: string | null; preferredContact?: string | null; logoMediaId?: string | null; version?: number | null } | null;
     hero?: { heading?: string | null; subtitle?: string | null; ctaLabel?: string | null; heroImage?: { kind?: string | null; assetId?: string | null; mediaId?: string | null } | null; version?: number | null } | null;
     contact?: { heading?: string | null; message?: string | null; version?: number | null } | null;
-    about?: { heading?: string | null; story?: string | null; version?: number | null } | null;
+    about?: { heading?: string | null; story?: string | null; photoMediaId?: string | null; version?: number | null } | null;
     services?: { heading?: string | null; cards?: CardFields[] | null; version?: number | null } | null;
     whyChooseUs?: { heading?: string | null; cards?: CardFields[] | null; version?: number | null } | null;
     team?: { heading?: string | null; members?: MemberFields[] | null; version?: number | null } | null;
@@ -131,7 +131,7 @@ export function sectionView(draft: DraftFields, section: SectionKey) {
   const sections = draft.sections ?? {};
   if (section === 'about') {
     const about = sections.about ?? {};
-    return { heading: about.heading ?? 'About us', ...optional({ story: about.story }), version: about.version ?? 0 };
+    return { heading: about.heading ?? 'About us', ...optional({ story: about.story, photoMediaId: about.photoMediaId }), version: about.version ?? 0 };
   }
   if (section === 'services' || section === 'whyChooseUs') {
     const block = sections[section] ?? {};
@@ -150,7 +150,8 @@ export function sectionView(draft: DraftFields, section: SectionKey) {
     const team = sections.team ?? {};
     return {
       heading: team.heading ?? 'Our team',
-      members: (team.members ?? []).map((member) => ({ name: member.name, ...optional({ role: member.role, phone: member.phone, whatsapp: member.whatsapp }), ...(member.contactConsent ? { contactConsent: true } : {}) })),
+      members: (team.members ?? []).map((member) => ({ name: member.name, ...optional({ role: member.role, phone: member.phone, whatsapp: member.whatsapp }), ...(member.contactConsent ? { contactConsent: true } : {}),
+        ...(member.photoMediaId ? { photoMediaId: member.photoMediaId, photoConsent: true } : {}) })),
       version: team.version ?? 0,
     };
   }

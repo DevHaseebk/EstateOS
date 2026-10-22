@@ -87,7 +87,7 @@ function valuesFor(website: WebsiteData, key: Basic): Values {
   if (key === 'header') return { contactButtonLabel: header.contactButtonLabel, preferredContact: header.preferredContact ?? '', logoMediaId: header.logoMediaId ?? '' };
   if (key === 'hero') return { heading: hero.heading, subtitle: hero.subtitle ?? '', ctaLabel: hero.ctaLabel, heroImageId: hero.heroImageId ?? '', heroUploadId: hero.heroUploadId ?? '' };
   if (key === 'contact') return { heading: contact.heading, message: contact.message ?? '' };
-  return { heading: about.heading, story: about.story ?? '' };
+  return { heading: about.heading, story: about.story ?? '', photoMediaId: about.photoMediaId ?? '' };
 }
 function bodyFor(key: Basic, values: Values) {
   if (key === 'header') return { contactButtonLabel: values.contactButtonLabel, preferredContact: values.preferredContact || null, logoMediaId: values.logoMediaId || null };
@@ -95,7 +95,7 @@ function bodyFor(key: Basic, values: Values) {
     return { heading: values.heading, subtitle: values.subtitle, ctaLabel: values.ctaLabel, heroImageId: values.heroUploadId ? null : values.heroImageId || null, heroUploadId: values.heroUploadId || null };
   }
   if (key === 'contact') return { heading: values.heading, message: values.message };
-  return { heading: values.heading, story: values.story };
+  return { heading: values.heading, story: values.story, photoMediaId: values.photoMediaId || null };
 }
 
 export function BasicSectionForm({ website, sectionKey, onSaved }: { website: WebsiteData; sectionKey: Basic; onSaved: OnSaved }) {
@@ -169,7 +169,19 @@ export function BasicSectionForm({ website, sectionKey, onSaved }: { website: We
     {sectionKey === 'about' && <>
       <TextField id="aboutHeading" label="Heading" value={values.heading} onChange={set('heading')} max={60} error={errors.heading} disabled={disabled} />
       <TextField id="story" label="About your agency" value={values.story} onChange={set('story')} max={1200} error={errors.story} multiline disabled={disabled} hint="Needed before this section can be shown, at least 20 characters" />
-      <p className="field-hint">A supporting photo comes with photo upload in a later phase.</p>
+      <fieldset className="choice-group">
+        <legend>Photo (optional)</legend>
+        {/* Phase 3e: one supporting photo, shown beside the story on wide screens (D-032). */}
+        {values.photoMediaId
+          ? <div className="logo-preview">
+            <Image className="about-photo-preview" src={ownerMediaUrl(values.photoMediaId, 480)} alt="Your About photo" width={320} height={200} unoptimized />
+            <button type="button" className="danger-text small" disabled={disabled} onClick={() => set('photoMediaId')('')}>Remove photo</button>
+          </div>
+          : <p className="field-hint">Without a photo, this section shows the text only.</p>}
+        <ImageUpload purpose="ABOUT" label={values.photoMediaId ? 'Replace photo' : 'Upload a photo'}
+          rule="JPEG, PNG or WebP, up to 5 MB, at least 800 × 500 pixels. Location data is removed automatically." disabled={disabled} onUploaded={set('photoMediaId')} />
+        {errors.photoMediaId && <p className="field-error">{errors.photoMediaId}</p>}
+      </fieldset>
     </>}
   </FormShell>;
 }
@@ -228,27 +240,31 @@ export function CardsForm({ website, sectionKey, onSaved }: { website: WebsiteDa
 }
 
 // ---- Team: up to 12 members; numbers need the person's consent ----
-type Member = { name: string; role: string; phone: string; whatsapp: string; contactConsent: boolean };
+type Member = { name: string; role: string; phone: string; whatsapp: string; contactConsent: boolean; photoMediaId: string; photoConsent: boolean };
 type TeamValues = { heading: string; members: Member[] };
 function teamValues(website: WebsiteData): TeamValues {
   const { team } = website.sections;
   return {
     heading: team.heading,
-    members: team.members.map((member) => ({ name: member.name, role: member.role ?? '', phone: member.phone ?? '', whatsapp: member.whatsapp ?? '', contactConsent: Boolean(member.contactConsent) })),
+    members: team.members.map((member) => ({ name: member.name, role: member.role ?? '', phone: member.phone ?? '', whatsapp: member.whatsapp ?? '', contactConsent: Boolean(member.contactConsent),
+      photoMediaId: member.photoMediaId ?? '', photoConsent: Boolean(member.photoConsent),
+    })),
   };
 }
 
 export function TeamForm({ website, onSaved }: { website: WebsiteData; onSaved: OnSaved }) {
   const submit = useCallback(async (values: TeamValues) => teamValues(await saveSection(website, 'team', {
     heading: values.heading,
-    members: values.members.map((member) => ({ name: member.name, role: member.role, phone: member.phone, whatsapp: member.whatsapp, contactConsent: member.contactConsent })),
+    members: values.members.map((member) => ({ name: member.name, role: member.role, phone: member.phone, whatsapp: member.whatsapp, contactConsent: member.contactConsent,
+      photoMediaId: member.photoMediaId || null, photoConsent: member.photoMediaId ? member.photoConsent : undefined,
+    })),
   }, onSaved)), [website, onSaved]);
   const { values, setValues, dirty, saving, errors, message, save } = useDraftForm(teamValues(website), submit);
   const disabled = !website.canEdit || saving;
   const setMember = (index: number, patch: Partial<Member>) => setValues({ ...values, members: values.members.map((member, i) => i === index ? { ...member, ...patch } : member) });
   return <FormShell title="Team" readOnly={!website.canEdit} dirty={dirty} saving={saving} message={message} onSubmit={save}>
     <TextField id="team-heading" label="Heading" value={values.heading} onChange={(heading) => setValues({ ...values, heading })} max={60} error={errors.heading} disabled={disabled} />
-    <p className="field-hint">Add up to 12 real team members. Photos come with photo upload in a later phase; until then the website shows initials.</p>
+    <p className="field-hint">Add up to 12 real team members. A photo is optional; without one the website shows initials.</p>
     <ol className="card-rows">
       {values.members.map((member, index) => <li key={index} className="card-row">
         <p className="card-row-title">Member {index + 1}</p>
@@ -263,12 +279,28 @@ export function TeamForm({ website, onSaved }: { website: WebsiteData; onSaved: 
           This person agreed to show this number on the website
         </label>}
         {errors[`members.${index}.contactConsent`] && <p className="field-error">{errors[`members.${index}.contactConsent`]}</p>}
+        {/* Phase 3e §1 Q2: a member photo is a real person's image, so it needs their agreement. */}
+        <div className="member-photo">
+          {member.photoMediaId && <div className="logo-preview">
+            <Image className="member-photo-preview" src={ownerMediaUrl(member.photoMediaId, 480)} alt={member.name ? `Photo of ${member.name}` : 'Member photo'} width={96} height={96} unoptimized />
+            <button type="button" className="danger-text small" disabled={disabled} onClick={() => setMember(index, { photoMediaId: '', photoConsent: false })}>Remove</button>
+          </div>}
+          <ImageUpload purpose="TEAM" label={member.photoMediaId ? 'Replace photo' : 'Upload photo'}
+            rule="Optional. JPEG, PNG or WebP, up to 5 MB, at least 300 × 300 pixels; shown as a circle." disabled={disabled}
+            onUploaded={(photoMediaId) => setMember(index, { photoMediaId })} />
+          {member.photoMediaId && <label className="checkbox consent">
+            <input type="checkbox" checked={member.photoConsent} onChange={(event) => setMember(index, { photoConsent: event.target.checked })} aria-invalid={Boolean(errors[`members.${index}.photoConsent`])} />
+            This person agreed to show their photo on the website
+          </label>}
+          {errors[`members.${index}.photoConsent`] && <p className="field-error">{errors[`members.${index}.photoConsent`]}</p>}
+          {errors[`members.${index}.photoMediaId`] && <p className="field-error">{errors[`members.${index}.photoMediaId`]}</p>}
+        </div>
         {website.canEdit && <RowControls index={index} count={values.members.length} label={`member ${index + 1}`}
           onMove={(offset) => setValues({ ...values, members: move(values.members, index, offset) })}
           onRemove={() => setValues({ ...values, members: values.members.filter((_, i) => i !== index) })} />}
       </li>)}
     </ol>
-    {website.canEdit && values.members.length < 12 && <button type="button" className="secondary" onClick={() => setValues({ ...values, members: [...values.members, { name: '', role: '', phone: '', whatsapp: '', contactConsent: false }] })}>Add member</button>}
+    {website.canEdit && values.members.length < 12 && <button type="button" className="secondary" onClick={() => setValues({ ...values, members: [...values.members, { name: '', role: '', phone: '', whatsapp: '', contactConsent: false, photoMediaId: '', photoConsent: false }] })}>Add member</button>}
   </FormShell>;
 }
 

@@ -67,6 +67,12 @@ export function snapshotMediaIds(site: Awaited<ReturnType<typeof buildSnapshot>>
   if (hero.heroUploadId) ids.add(hero.heroUploadId);
   if (header.logoMediaId) ids.add(header.logoMediaId);
   for (const property of site.properties as { photos?: string[] }[]) for (const id of property.photos ?? []) ids.add(id);
+  // Phase 3e: About and Team photos, only when the section is shown (a hidden section's photo stays private).
+  const visible = site.layout.visible as Record<string, boolean>;
+  const about = site.sections.about as { photoMediaId?: string };
+  const team = site.sections.team as { members: { photoMediaId?: string }[] };
+  if (visible.about && about.photoMediaId) ids.add(about.photoMediaId);
+  if (visible.team) for (const member of team.members) if (member.photoMediaId) ids.add(member.photoMediaId);
   return [...ids];
 }
 

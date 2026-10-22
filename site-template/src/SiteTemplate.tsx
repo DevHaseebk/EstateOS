@@ -20,7 +20,10 @@ function OptionalSectionView({ block, contacts }: { block: OptionalBlock; contac
   return <section className={`est-section est-optional est-${block.key}`} id={block.key} aria-labelledby={titleId}>
     <div className="est-container">
       <h2 id={titleId} className="est-h2">{block.heading}</h2>
-      {block.key === 'about' && <p className="est-about-story">{block.story}</p>}
+      {block.key === 'about' && <div className={block.photo ? 'est-about-body est-about-with-photo' : 'est-about-body'}>
+        {block.photo && <img className="est-about-photo" src={block.photo.url} srcSet={block.photo.srcSet} sizes="(min-width: 768px) 40vw, 100vw" alt={block.photo.alt} loading="lazy" decoding="async" />}
+        <p className="est-about-story">{block.story}</p>
+      </div>}
       {block.key === 'properties' && <ul className="est-card-grid">
         {block.items.map((property) => {
           const location = `${property.area}, ${property.city}`;
@@ -51,7 +54,9 @@ function OptionalSectionView({ block, contacts }: { block: OptionalBlock; contac
       </ul>}
       {block.key === 'team' && <ul className="est-card-grid">
         {block.members.map((member, index) => <li key={`${member.name}-${index}`} className="est-card est-member">
-          <span className="est-initials" aria-hidden="true">{initials(member.name)}</span>
+          {member.photoUrl
+            ? <img className="est-member-photo" src={member.photoUrl} alt={member.name} width={56} height={56} loading="lazy" decoding="async" />
+            : <span className="est-initials" aria-hidden="true">{initials(member.name)}</span>}
           <div>
             <h3 className="est-h3">{member.name}</h3>
             {member.role && <p className="est-muted">{member.role}</p>}

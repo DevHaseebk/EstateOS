@@ -6,12 +6,15 @@ import { mediaStorage } from './storage.js';
 // Phase 3d image pipeline (docs/PHASE-3D-PHOTO-UPLOADS-CONTRACT-APPROVED.md): D-060 limits, D-086 privacy-clean derivatives.
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const VARIANT_WIDTHS = [480, 960, 1600] as const;
-export const MEDIA_PURPOSES = ['HERO', 'LOGO', 'PROPERTY'] as const;
+export const MEDIA_PURPOSES = ['HERO', 'LOGO', 'PROPERTY', 'ABOUT', 'TEAM'] as const;
 export type MediaPurpose = typeof MEDIA_PURPOSES[number];
 const MIN_SIZE: Record<MediaPurpose, { width: number; height: number; landscape?: boolean; message: string }> = {
   HERO: { width: 1200, height: 1, landscape: true, message: 'The main photo must be at least 1200 pixels wide and wider than it is tall.' },
   LOGO: { width: 64, height: 64, message: 'The logo must be at least 64 × 64 pixels.' },
   PROPERTY: { width: 400, height: 300, message: 'Property photos must be at least 400 × 300 pixels.' },
+  // Phase 3e (docs/PHASE-3E-ABOUT-TEAM-PHOTOS-CONTRACT-APPROVED.md §1).
+  ABOUT: { width: 800, height: 500, message: 'The About photo must be at least 800 × 500 pixels.' },
+  TEAM: { width: 300, height: 300, message: 'Team photos must be at least 300 × 300 pixels.' },
 };
 
 export class MediaError extends Error {

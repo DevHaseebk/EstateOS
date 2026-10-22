@@ -4,7 +4,7 @@ import { useId, useState, type ChangeEvent } from 'react';
 import { IMAGE_ACCEPT, precheckImage, uploadImage, type MediaPurpose } from '../lib/media';
 
 /**
- * Phase 3d single-image upload (Hero, logo). The upload is only STAGED; the section's own Save attaches it (D-106).
+ * Phase 3d/3e single-image upload (Hero, logo, About, team member). The upload is only STAGED; the section's own Save attaches it (D-106).
  * Shows the rule near the control and a plain per-file reason on failure (D-060 §4).
  */
 export function ImageUpload({ purpose, label, rule, disabled, onUploaded, onBusyChange }: {
