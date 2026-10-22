@@ -123,7 +123,7 @@ A Codex review of Phases 0–6a was checked against the code. The resulting Phas
 
 ## Phase 7a status (2026-10-22)
 
-Claude reviewed the Codex Phase 7 draft (kept as the staging/production umbrella) and the Phase 7a deploy-readiness contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude** (uncommitted): `docs/PHASE-7A-DEPLOY-READINESS-CONTRACT-APPROVED.md`.
+Claude reviewed the Codex Phase 7 draft (kept as the staging/production umbrella) and the Phase 7a deploy-readiness contract is **APPROVED** (2026-10-22) and **implemented and verified by Claude**, committed `6465bc5` and pushed: `docs/PHASE-7A-DEPLOY-READINESS-CONTRACT-APPROVED.md`.
 
 - Built: an S3-compatible `MediaStorage` driver (`MEDIA_STORAGE=s3`, private bucket, `@aws-sdk/client-s3`); `assertProductionConfig` (production refuses development defaults, short or equal keys, local storage); `GET /api/ready` (503 unless the database and storage answer); `RUN_BACKGROUND_JOBS`; `BACKEND_INTERNAL_URL` for the public site too (`API_URL` fallback); encrypted backup/restore CLIs (`npm run backup|restore -w backend`, AES-256-GCM, restore only into an empty non-source database); `.github/workflows/ci.yml`; refreshed `.env.example` files; `docs/DEPLOYMENT-RUNBOOK.md`.
 - Checks: typecheck, lint and build pass for 5 workspaces; `npm test -w backend` passes 164/164 (the whole media suite also runs against an in-process fake S3); local HTTPS still works with local storage; a manual backup of the synthetic dev database restored into a scratch database with identical counts (10 collections).

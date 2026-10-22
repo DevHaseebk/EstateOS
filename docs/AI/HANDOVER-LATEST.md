@@ -2,7 +2,7 @@
 
 ## Current task
 - Contract: `docs/PHASE-7A-DEPLOY-READINESS-CONTRACT-APPROVED.md`. The owner approved it in chat on 2026-10-22, including the section 5 confirmations. Umbrella: the Codex draft `docs/PHASE-7-STAGING-DEPLOYMENT-CONTRACT-PROPOSED.md` (unchanged).
-- Git: branch `master`, HEAD `4a9ba4d` (pushed, the Codex browser-gate record). **Uncommitted:** all Phase 7a work, plus the Codex Phase 7 draft and its CURRENT-STATE/HANDOVER entries (kept below). Commit and push only on the owner's instruction.
+- Git: branch `master`. Phase 7a, together with the Codex Phase 7 draft and its CURRENT-STATE/HANDOVER entries, committed as `6465bc5` and pushed to `origin/master` on the owner's instruction.
 - Review of the Codex work: docs only, no code; accurate on code facts. Correction to Claude's own review: the admin and Super Admin BFFs **already** answered 503 in production without `TRUSTED_CLIENT_IP_HEADER` (error code `AUTH_UNAVAILABLE`), so that code was kept and only tested; the shared `unknown` IP only affects development without Caddy.
 - Decisions: D-081, D-088, D-093, D-094, D-105, D-111, D-112, D-114, D-115, D-116.
 
